@@ -1,18 +1,21 @@
 import { Injectable } from '@nestjs/common';
 import { SupabaseService } from '../supabase/supabase.service';
 import { CreateInstructorDto, UpdateInstructorDto } from './dto';
+import { camelToSnakeCase, transformSupabaseResult } from '../utils';
 
 @Injectable()
 export class InstructorsService {
   constructor(private supabaseService: SupabaseService) {}
 
   async create(createInstructorDto: CreateInstructorDto) {
+    const snakeCaseDto = camelToSnakeCase(createInstructorDto);
     const { data, error } = await this.supabaseService
       .getClient()
       .from('instructors')
-      .insert([createInstructorDto])
+      .insert([snakeCaseDto])
       .select()
-      .single();
+      .single()
+      .then(transformSupabaseResult);
 
     if (error) throw error;
     return data;
@@ -22,7 +25,8 @@ export class InstructorsService {
     const { data, error } = await this.supabaseService
       .getClient()
       .from('instructors')
-      .select('*');
+      .select('*')
+      .then(transformSupabaseResult);
 
     if (error) throw error;
     return data;
@@ -34,20 +38,23 @@ export class InstructorsService {
       .from('instructors')
       .select('*')
       .eq('instructor_id', id)
-      .single();
+      .single()
+      .then(transformSupabaseResult);
 
     if (error) throw error;
     return data;
   }
 
   async update(id: number, updateInstructorDto: UpdateInstructorDto) {
+    const snakeCaseDto = camelToSnakeCase(updateInstructorDto);
     const { data, error } = await this.supabaseService
       .getClient()
       .from('instructors')
-      .update(updateInstructorDto)
+      .update(snakeCaseDto)
       .eq('instructor_id', id)
       .select()
-      .single();
+      .single()
+      .then(transformSupabaseResult);
 
     if (error) throw error;
     return data;
@@ -60,7 +67,7 @@ export class InstructorsService {
       .delete()
       .eq('instructor_id', id)
       .select()
-      .single();
+      .then(transformSupabaseResult);
 
     if (error) throw error;
     return data;

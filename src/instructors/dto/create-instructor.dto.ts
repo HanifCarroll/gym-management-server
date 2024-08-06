@@ -1,5 +1,6 @@
 export class CreateInstructorDto {
-  name: string;
-  contact_details: string;
-  bio?: string;
+  firstName: string;
+  lastName: string;
+  phone: string;
+  email: string;
 }
