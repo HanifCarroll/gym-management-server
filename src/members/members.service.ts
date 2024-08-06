@@ -1,16 +1,18 @@
 import { Injectable } from '@nestjs/common';
 import { SupabaseService } from '../supabase/supabase.service';
 import { CreateMemberDto, UpdateMemberDto } from './dto';
+import { camelToSnakeCase } from '../utils';
 
 @Injectable()
 export class MembersService {
   constructor(private supabaseService: SupabaseService) {}
 
   async create(createMemberDto: CreateMemberDto) {
+    const snakeCaseDto = camelToSnakeCase(createMemberDto);
     const { data, error } = await this.supabaseService
       .getClient()
       .from('members')
-      .insert([createMemberDto])
+      .insert([snakeCaseDto])
       .select()
       .single();
 

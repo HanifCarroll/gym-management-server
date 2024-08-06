@@ -1,7 +1,8 @@
 export class CreateMemberDto {
-  name: string;
+  firstName: string;
+  lastName: string;
   email: string;
   phone: string;
   address?: string;
-  membership_plan_id: number;
+  membershipPlanId: number;
 }
