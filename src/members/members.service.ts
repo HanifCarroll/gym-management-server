@@ -45,10 +45,11 @@ export class MembersService {
   }
 
   async update(id: number, updateMemberDto: UpdateMemberDto) {
+    const snakeCaseDto = camelToSnakeCase(updateMemberDto);
     const { data, error } = await this.supabaseService
       .getClient()
       .from('members')
-      .update(updateMemberDto)
+      .update(snakeCaseDto)
       .eq('member_id', id)
       .select()
       .single()
@@ -65,7 +66,6 @@ export class MembersService {
       .delete()
       .eq('member_id', id)
       .select()
-      .single()
       .then(transformSupabaseResult);
 
     if (error) throw error;
