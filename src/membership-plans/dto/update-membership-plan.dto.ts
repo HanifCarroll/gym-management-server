@@ -1,5 +1,5 @@
 export class UpdateMembershipPlanDto {
-  plan_name?: string;
+  planName?: string;
   duration?: number;
   price?: number;
   description?: string;

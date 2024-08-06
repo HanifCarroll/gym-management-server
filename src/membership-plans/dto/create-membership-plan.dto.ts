@@ -1,5 +1,5 @@
 export class CreateMembershipPlanDto {
-  plan_name: string;
+  planName: string;
   duration: number;
   price: number;
   description?: string;

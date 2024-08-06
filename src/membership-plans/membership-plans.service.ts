@@ -1,18 +1,21 @@
 import { Injectable } from '@nestjs/common';
 import { SupabaseService } from '../supabase/supabase.service';
 import { CreateMembershipPlanDto, UpdateMembershipPlanDto } from './dto';
+import { camelToSnakeCase, transformSupabaseResult } from '../utils';
 
 @Injectable()
 export class MembershipPlansService {
   constructor(private supabaseService: SupabaseService) {}
 
   async create(createMembershipPlanDto: CreateMembershipPlanDto) {
+    const snakeCaseDto = camelToSnakeCase(createMembershipPlanDto);
     const { data, error } = await this.supabaseService
       .getClient()
       .from('membership_plans')
-      .insert([createMembershipPlanDto])
+      .insert([snakeCaseDto])
       .select()
-      .single();
+      .single()
+      .then(transformSupabaseResult);
 
     if (error) throw error;
     return data;
@@ -22,7 +25,8 @@ export class MembershipPlansService {
     const { data, error } = await this.supabaseService
       .getClient()
       .from('membership_plans')
-      .select('*');
+      .select('*')
+      .then(transformSupabaseResult);
 
     if (error) throw error;
     return data;
@@ -34,20 +38,23 @@ export class MembershipPlansService {
       .from('membership_plans')
       .select('*')
       .eq('plan_id', id)
-      .single();
+      .single()
+      .then(transformSupabaseResult);
 
     if (error) throw error;
     return data;
   }
 
   async update(id: number, updateMembershipPlanDto: UpdateMembershipPlanDto) {
+    const snakeCaseDto = camelToSnakeCase(updateMembershipPlanDto);
     const { data, error } = await this.supabaseService
       .getClient()
       .from('membership_plans')
-      .update(updateMembershipPlanDto)
-      .eq('plan_id', id)
+      .update(snakeCaseDto)
+      .eq('membership_plan_id', id)
       .select()
-      .single();
+      .single()
+      .then(transformSupabaseResult);
 
     if (error) throw error;
     return data;
@@ -58,9 +65,9 @@ export class MembershipPlansService {
       .getClient()
       .from('membership_plans')
       .delete()
-      .eq('plan_id', id)
+      .eq('membership_plan_id', id)
       .select()
-      .single();
+      .then(transformSupabaseResult);
 
     if (error) throw error;
     return data;
