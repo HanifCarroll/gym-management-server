@@ -9,7 +9,7 @@ import { InstructorsModule } from './instructors/instructors.module';
 import { AttendanceModule } from './attendance/attendance.module';
 import { PaymentsModule } from './payments/payments.module';
 import { MembershipPlansModule } from './membership-plans/membership-plans.module';
-import { ClassSchedulesModule } from './class-schedules/class-schedules.module';
+import { ClassInstancesModule } from './class-instances/class-instances.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { ReportsModule } from './reports/reports.module';
 import { AuthModule } from './auth/auth.module';
@@ -25,7 +25,7 @@ import { AuthModule } from './auth/auth.module';
     AttendanceModule,
     PaymentsModule,
     MembershipPlansModule,
-    ClassSchedulesModule,
+    ClassInstancesModule,
     NotificationsModule,
     ReportsModule,
     AuthModule,

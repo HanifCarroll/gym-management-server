@@ -1,4 +1,5 @@
 import { PostgrestResponse } from '@supabase/supabase-js';
+import { format } from 'date-fns';
 
 export function camelToSnakeCase(
   obj: Record<string, any>,
@@ -50,4 +51,9 @@ export function transformSupabaseResult<T>(result: PostgrestResponse<T>): {
     data: snakeToCamelCase(result.data as Record<string, any>) as T,
     error: null,
   };
+}
+
+export function formatTimeForDatabase(timeString: string): string {
+  const date = new Date(timeString);
+  return format(date, 'HH:mm:ss');
 }

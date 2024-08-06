@@ -8,8 +8,8 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
-import { ClassSchedulesService } from './class-schedules.service';
-import { CreateClassScheduleDto, UpdateClassScheduleDto } from './dto';
+import { ClassInstancesService } from './class-instances.service';
+import { CreateClassInstanceDto, UpdateClassInstanceDto } from './dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import {
   ApiBearerAuth,
@@ -22,8 +22,8 @@ import {
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
 @Controller('api/class-schedules')
-export class ClassSchedulesController {
-  constructor(private readonly classSchedulesService: ClassSchedulesService) {}
+export class ClassInstancesController {
+  constructor(private readonly classSchedulesService: ClassInstancesService) {}
 
   @Post()
   @ApiOperation({ summary: 'Create a new class schedule' })
@@ -32,7 +32,7 @@ export class ClassSchedulesController {
     description: 'The class schedule has been successfully created.',
   })
   @ApiResponse({ status: 400, description: 'Bad Request.' })
-  create(@Body() createClassScheduleDto: CreateClassScheduleDto) {
+  create(@Body() createClassScheduleDto: CreateClassInstanceDto) {
     return this.classSchedulesService.create(createClassScheduleDto);
   }
 
@@ -61,7 +61,7 @@ export class ClassSchedulesController {
   @ApiResponse({ status: 404, description: 'Class schedule not found.' })
   update(
     @Param('id') id: string,
-    @Body() updateClassScheduleDto: UpdateClassScheduleDto,
+    @Body() updateClassScheduleDto: UpdateClassInstanceDto,
   ) {
     return this.classSchedulesService.update(+id, updateClassScheduleDto);
   }
@@ -75,37 +75,5 @@ export class ClassSchedulesController {
   @ApiResponse({ status: 404, description: 'Class schedule not found.' })
   remove(@Param('id') id: string) {
     return this.classSchedulesService.remove(+id);
-  }
-
-  @Get('class/:classId')
-  @ApiOperation({ summary: 'Get class schedules for a specific class' })
-  @ApiResponse({
-    status: 200,
-    description: 'Return class schedules for the class.',
-  })
-  findByClass(@Param('classId') classId: string) {
-    return this.classSchedulesService.findByClass(+classId);
-  }
-
-  @Get('instructor/:instructorId')
-  @ApiOperation({ summary: 'Get class schedules for a specific instructor' })
-  @ApiResponse({
-    status: 200,
-    description: 'Return class schedules for the instructor.',
-  })
-  findByInstructor(@Param('instructorId') instructorId: string) {
-    return this.classSchedulesService.findByInstructor(+instructorId);
-  }
-
-  @Get('day/:dayOfWeek')
-  @ApiOperation({
-    summary: 'Get class schedules for a specific day of the week',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Return class schedules for the day.',
-  })
-  findByDayOfWeek(@Param('dayOfWeek') dayOfWeek: string) {
-    return this.classSchedulesService.findByDayOfWeek(dayOfWeek);
   }
 }
