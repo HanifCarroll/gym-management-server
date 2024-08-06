@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { SupabaseService } from '../supabase/supabase.service';
 import { CreateMemberDto, UpdateMemberDto } from './dto';
-import { camelToSnakeCase } from '../utils';
+import { camelToSnakeCase, transformSupabaseResult } from '../utils';
 
 @Injectable()
 export class MembersService {
@@ -24,7 +24,8 @@ export class MembersService {
     const { data, error } = await this.supabaseService
       .getClient()
       .from('members')
-      .select('*');
+      .select('*')
+      .then(transformSupabaseResult);
 
     if (error) throw error;
     return data;
@@ -36,7 +37,8 @@ export class MembersService {
       .from('members')
       .select('*')
       .eq('member_id', id)
-      .single();
+      .single()
+      .then(transformSupabaseResult);
 
     if (error) throw error;
     return data;
@@ -49,7 +51,8 @@ export class MembersService {
       .update(updateMemberDto)
       .eq('member_id', id)
       .select()
-      .single();
+      .single()
+      .then(transformSupabaseResult);
 
     if (error) throw error;
     return data;
@@ -62,7 +65,8 @@ export class MembersService {
       .delete()
       .eq('member_id', id)
       .select()
-      .single();
+      .single()
+      .then(transformSupabaseResult);
 
     if (error) throw error;
     return data;
