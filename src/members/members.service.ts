@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateMemberDto } from './dto/create-member.dto';
 import { UpdateMemberDto } from './dto/update-member.dto';
 import { SupabaseService } from '../supabase/supabase.service';
@@ -26,22 +26,51 @@ export class MembersService {
     const { data, error } = await this.supabaseService
       .getClient()
       .from('member')
-      .select('*')
+      .select('id, first_name, last_name, email, phone, status')
       .then(transformSupabaseResult);
 
     if (error) throw error;
     return data;
   }
 
-  findOne(id: number) {
+  findOne(id: string) {
     return `This action returns a #${id} member`;
   }
 
-  update(id: number, updateMemberDto: UpdateMemberDto) {
-    return `This action updates a #${id} member`;
+  async update(updateMemberDto: UpdateMemberDto) {
+    const snakeCaseDto = camelToSnakeCase(updateMemberDto);
+    const { data, error } = await this.supabaseService
+      .getClient()
+      .from('member')
+      .update(snakeCaseDto)
+      .eq('id', updateMemberDto.id)
+      .select('id, first_name, last_name, email, phone, status')
+      .then(transformSupabaseResult);
+
+    if (error) throw error;
+    return data;
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} member`;
+  async remove(id: string) {
+    const { data, error } = await this.supabaseService
+      .getClient()
+      .from('member')
+      .delete()
+      .eq('id', id)
+      .select()
+      .then(transformSupabaseResult);
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        throw new NotFoundException(`Member with ID ${id} not found`);
+      }
+      throw error;
+    }
+
+    if (data === null) {
+      throw new NotFoundException(`Member with ID ${id} not found`);
+    }
+
+    return data;
   }
 }
