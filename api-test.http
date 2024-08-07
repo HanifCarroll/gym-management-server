@@ -1,9 +1,18 @@
+# Gym Management API Tests
+# Version: 1.2
+# Last Updated: 2024-08-07
+# Description: This file contains HTTP requests for testing the Gym Management API.
+# Usage: Replace placeholder values in .env file before running tests.
+
 ### Variables
 @baseUrl = http://localhost:3001/api
 @memberId = 586394fa-6925-4414-bf51-aa0cdb7f75bc
 @amount = 1000
 
+### Check-In Operations
+
 ### Create a new check-in
+# Expected: 201 Created
 POST {{baseUrl}}/check-in
 Content-Type: application/json
 
@@ -12,12 +21,17 @@ Content-Type: application/json
 }
 
 ### Get historical check-ins for member
+# Expected: 200 OK
 GET {{baseUrl}}/check-in/history?memberId={{memberId}}
 
 ### Get all historical check-ins
+# Expected: 200 OK
 GET {{baseUrl}}/check-in/history
 
+### Membership Plan Operations
+
 ### Create a new membership plan
+# Expected: 201 Created
 POST {{baseUrl}}/membership-plans
 Content-Type: application/json
 
@@ -27,16 +41,16 @@ Content-Type: application/json
   "price": 49.99
 }
 
-### Store the payment intent ID from the response above
-@membershipPlanId = 3a0fe53d-99ec-4b15-9a82-4f627182a119
-
 ### Get all membership plans
+# Expected: 200 OK
 GET {{baseUrl}}/membership-plans
 
 ### Get a specific membership plan
+# Expected: 200 OK
 GET {{baseUrl}}/membership-plans/{{membershipPlanId}}
 
 ### Update a membership plan
+# Expected: 200 OK
 PATCH {{baseUrl}}/membership-plans/{{membershipPlanId}}
 Content-Type: application/json
 
@@ -46,9 +60,13 @@ Content-Type: application/json
 }
 
 ### Delete a membership plan
+# Expected: 204 No Content
 DELETE {{baseUrl}}/membership-plans/{{membershipPlanId}}
 
+### Payment Operations
+
 ### Initiate a payment
+# Expected: 200 OK
 POST {{baseUrl}}/payments/initiate
 Content-Type: application/json
 
@@ -57,22 +75,25 @@ Content-Type: application/json
   "amount": {{amount}}
 }
 
-### Store the payment intent ID from the response above
-@paymentIntentId = pi_3Pl9EqHC8VMbi1Dr1WwzBgtS
-
 ### Confirm a payment
+# Expected: 200 OK
 POST {{baseUrl}}/payments/confirm/{{paymentIntentId}}
 Content-Type: application/json
 
 ### Get payment history for a member
+# Expected: 200 OK
 GET {{baseUrl}}/payments/history/{{memberId}}
 
+### Member Operations
+
 ### Get members
-GET http://localhost:3001/api/members
+# Expected: 200 OK
+GET {{baseUrl}}/members
 Accept: application/json
 
 ### Register member
-POST http://localhost:3001/api/members
+# Expected: 201 Created
+POST {{baseUrl}}/members
 Content-Type: application/json
 
 {
@@ -83,3 +104,19 @@ Content-Type: application/json
   "status": "Active"
 }
 
+### Error Handling Examples
+
+### Get non-existent membership plan
+# Expected: 404 Not Found
+GET {{baseUrl}}/membership-plans/non-existent-id
+
+### Create member with invalid data
+# Expected: 400 Bad Request
+POST {{baseUrl}}/members
+Content-Type: application/json
+
+{
+  "firstName": "Invalid",
+  "lastName": "User",
+  "email": "not-an-email"
+}
