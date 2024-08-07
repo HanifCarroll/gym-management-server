@@ -5,7 +5,7 @@ import { SupabaseService } from '../supabase/supabase.service';
 import { camelToSnakeCase, transformSupabaseResult } from '../utils';
 
 @Injectable()
-export class MemberService {
+export class MembersService {
   constructor(private supabaseService: SupabaseService) {}
 
   async create(createMemberDto: CreateMemberDto) {
@@ -22,8 +22,15 @@ export class MemberService {
     return data;
   }
 
-  findAll() {
-    return `This action returns all member`;
+  async findAll() {
+    const { data, error } = await this.supabaseService
+      .getClient()
+      .from('member')
+      .select('*')
+      .then(transformSupabaseResult);
+
+    if (error) throw error;
+    return data;
   }
 
   findOne(id: number) {
