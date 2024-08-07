@@ -1,7 +1,52 @@
 ### Variables
 @baseUrl = http://localhost:3001/api
-@memberId = af6008fd-4fcf-48f4-945a-6debd5fcc1bf
+@memberId = 586394fa-6925-4414-bf51-aa0cdb7f75bc
 @amount = 1000
+
+### Create a new check-in
+POST {{baseUrl}}/check-in
+Content-Type: application/json
+
+{
+  "memberId": "{{memberId}}"
+}
+
+### Get historical check-ins for member
+GET {{baseUrl}}/check-in/history?memberId={{memberId}}
+
+### Get all historical check-ins
+GET {{baseUrl}}/check-in/history
+
+### Create a new membership plan
+POST {{baseUrl}}/membership-plans
+Content-Type: application/json
+
+{
+  "name": "Monthly Premium Plan",
+  "duration": 1,
+  "price": 49.99
+}
+
+### Store the payment intent ID from the response above
+@membershipPlanId = 3a0fe53d-99ec-4b15-9a82-4f627182a119
+
+### Get all membership plans
+GET {{baseUrl}}/membership-plans
+
+### Get a specific membership plan
+GET {{baseUrl}}/membership-plans/{{membershipPlanId}}
+
+### Update a membership plan
+PATCH {{baseUrl}}/membership-plans/{{membershipPlanId}}
+Content-Type: application/json
+
+{
+  "name": "Updated Monthly Plan",
+  "price": 54.99
+}
+
+### Delete a membership plan
+DELETE {{baseUrl}}/membership-plans/{{membershipPlanId}}
 
 ### Initiate a payment
 POST {{baseUrl}}/payments/initiate
