@@ -1,5 +1,4 @@
 import { PostgrestResponse } from '@supabase/supabase-js';
-import { format } from 'date-fns';
 
 export function camelToSnakeCase(
   obj: Record<string, any>,
@@ -10,20 +9,42 @@ export function camelToSnakeCase(
         /[A-Z]/g,
         (letter) => `_${letter.toLowerCase()}`,
       );
-      acc[newKey] = obj[key];
+      const value = obj[key];
+
+      if (
+        typeof value === 'object' &&
+        value !== null &&
+        !Array.isArray(value)
+      ) {
+        acc[newKey] = camelToSnakeCase(value);
+      } else if (Array.isArray(value)) {
+        acc[newKey] = value.map((item) =>
+          typeof item === 'object' && item !== null
+            ? camelToSnakeCase(item)
+            : item,
+        );
+      } else {
+        acc[newKey] = value;
+      }
+
       return acc;
     },
     {} as Record<string, any>,
   );
 }
 
-function snakeToCamelCase(obj: Record<string, any>): Record<string, any> {
-  return Object.fromEntries(
-    Object.entries(obj).map(([key, value]) => [
-      key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase()),
-      value,
-    ]),
-  );
+function snakeToCamelCase(obj: any): any {
+  if (Array.isArray(obj)) {
+    return obj.map((v) => snakeToCamelCase(v));
+  } else if (obj !== null && typeof obj === 'object') {
+    return Object.fromEntries(
+      Object.entries(obj).map(([key, value]) => [
+        key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase()),
+        snakeToCamelCase(value),
+      ]),
+    );
+  }
+  return obj;
 }
 
 export function transformSupabaseResult<T>(result: PostgrestResponse<T>): {
@@ -51,9 +72,4 @@ export function transformSupabaseResult<T>(result: PostgrestResponse<T>): {
     data: snakeToCamelCase(result.data as Record<string, any>) as T,
     error: null,
   };
-}
-
-export function formatTimeForDatabase(timeString: string): string {
-  const date = new Date(timeString);
-  return format(date, 'HH:mm:ss');
 }
