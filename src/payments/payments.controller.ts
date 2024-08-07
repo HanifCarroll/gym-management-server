@@ -29,4 +29,9 @@ export class PaymentController {
   async getPaymentHistory(@Param('memberId') memberId: string) {
     return this.paymentService.getPaymentHistory(memberId);
   }
+
+  @Get('history')
+  async getAllPayments(@Param('memberId') memberId: string) {
+    return this.paymentService.getAllPayments();
+  }
 }

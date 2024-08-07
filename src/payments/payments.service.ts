@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { SupabaseService } from '../supabase/supabase.service';
 import { StripeService } from '../stripe/stripe.service';
+import { transformSupabaseResult } from '../utils';
 
 @Injectable()
 export class PaymentService {
@@ -142,7 +143,24 @@ export class PaymentService {
       .from('payment')
       .select('*')
       .eq('member_id', memberId)
-      .order('date', { ascending: false });
+      .order('date', { ascending: false })
+      .then(transformSupabaseResult);
+
+    if (error) {
+      throw new Error('Failed to fetch payment history');
+    }
+
+    return payments;
+  }
+
+  async getAllPayments(): Promise<any[]> {
+    const supabase = this.supabaseService.getClient();
+
+    const { data: payments, error } = await supabase
+      .from('payment')
+      .select('*')
+      .order('date', { ascending: false })
+      .then(transformSupabaseResult);
 
     if (error) {
       throw new Error('Failed to fetch payment history');
