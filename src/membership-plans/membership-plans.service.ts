@@ -62,29 +62,42 @@ export class MembershipPlansService {
   }
 
   async remove(id: string) {
-    const { data, error } = await this.supabaseService
-      .getClient()
-      .from('membership_plan')
-      .delete()
-      .eq('id', id)
-      .select()
-      .single()
-      .then(transformSupabaseResult);
+    const client = this.supabaseService.getClient();
 
-    if (error) {
-      if (error.code === 'PGRST116') {
-        // This error code indicates that no rows were affected
+    try {
+      // First, delete associated memberships
+      const { error: membershipDeleteError } = await client
+        .from('membership')
+        .delete()
+        .eq('plan_id', id);
+      if (membershipDeleteError) throw membershipDeleteError;
+
+      // Then, delete the membership plan
+      const { data, error } = await client
+        .from('membership_plan')
+        .delete()
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          throw new NotFoundException(
+            `Membership plan with ID "${id}" not found`,
+          );
+        }
+        throw error;
+      }
+
+      if (!data) {
         throw new NotFoundException(
           `Membership plan with ID "${id}" not found`,
         );
       }
+
+      return transformSupabaseResult(data);
+    } catch (error) {
       throw error;
     }
-
-    if (!data) {
-      throw new NotFoundException(`Membership plan with ID "${id}" not found`);
-    }
-
-    return data;
   }
 }
