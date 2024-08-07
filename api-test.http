@@ -1,0 +1,10 @@
+POST http://localhost:3001/member
+Content-Type: application/json
+
+{
+  "firstName": "Hanif",
+  "lastName": "Carroll",
+  "email": "HanifCarroll@gmail.com",
+  "phone": "941-286-5903",
+  "status": "Active"
+}

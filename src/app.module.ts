@@ -13,6 +13,7 @@ import { ClassInstancesModule } from './class-instances/class-instances.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { ReportsModule } from './reports/reports.module';
 import { AuthModule } from './auth/auth.module';
+import { MemberModule } from './member/member.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { AuthModule } from './auth/auth.module';
     NotificationsModule,
     ReportsModule,
     AuthModule,
+    MemberModule,
   ],
   controllers: [AppController],
   providers: [AppService, SupabaseService],
