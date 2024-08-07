@@ -1,7 +1,32 @@
+### Variables
+@baseUrl = http://localhost:3001/api
+@memberId = af6008fd-4fcf-48f4-945a-6debd5fcc1bf
+@amount = 1000
+
+### Initiate a payment
+POST {{baseUrl}}/payments/initiate
+Content-Type: application/json
+
+{
+  "memberId": "{{memberId}}",
+  "amount": {{amount}}
+}
+
+### Store the payment intent ID from the response above
+@paymentIntentId = pi_3Pl9EqHC8VMbi1Dr1WwzBgtS
+
+### Confirm a payment
+POST {{baseUrl}}/payments/confirm/{{paymentIntentId}}
+Content-Type: application/json
+
+### Get payment history for a member
+GET {{baseUrl}}/payments/history/{{memberId}}
+
+### Get members
 GET http://localhost:3001/api/members
 Accept: application/json
 
-###
+### Register member
 POST http://localhost:3001/api/members
 Content-Type: application/json
 

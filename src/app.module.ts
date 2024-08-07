@@ -4,6 +4,8 @@ import { AppService } from './app.service';
 import { ConfigModule } from '@nestjs/config';
 import { SupabaseService } from './supabase/supabase.service';
 import { MembersModule } from './members/members.module';
+import { PaymentsModule } from './payments/payments.module';
+import { StripeService } from './stripe/stripe.service';
 
 @Module({
   imports: [
@@ -11,8 +13,9 @@ import { MembersModule } from './members/members.module';
       isGlobal: true,
     }),
     MembersModule,
+    PaymentsModule,
   ],
   controllers: [AppController],
-  providers: [AppService, SupabaseService],
+  providers: [AppService, SupabaseService, StripeService],
 })
 export class AppModule {}
