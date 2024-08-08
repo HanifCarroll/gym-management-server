@@ -3,6 +3,8 @@ import {
   Controller,
   Delete,
   Get,
+  HttpCode,
+  HttpStatus,
   Param,
   Patch,
   Post,
@@ -10,7 +12,10 @@ import {
 import { MembershipPlansService } from './membership-plans.service';
 import { CreateMembershipPlanDto } from './dto/create-membership-plan.dto';
 import { UpdateMembershipPlanDto } from './dto/update-membership-plan.dto';
+import { MembershipPlan } from './entities/membership-plan.entity';
+import { ApiTags } from '@nestjs/swagger';
 
+@ApiTags('membership-plans')
 @Controller('membership-plans')
 export class MembershipPlansController {
   constructor(
@@ -18,30 +23,37 @@ export class MembershipPlansController {
   ) {}
 
   @Post()
-  create(@Body() createMembershipPlanDto: CreateMembershipPlanDto) {
+  @HttpCode(HttpStatus.CREATED)
+  create(
+    @Body() createMembershipPlanDto: CreateMembershipPlanDto,
+  ): Promise<MembershipPlan> {
     return this.membershipPlansService.create(createMembershipPlanDto);
   }
 
   @Get()
-  findAll() {
+  @HttpCode(HttpStatus.OK)
+  findAll(): Promise<MembershipPlan[]> {
     return this.membershipPlansService.findAll();
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
+  @HttpCode(HttpStatus.OK)
+  findOne(@Param('id') id: string): Promise<MembershipPlan> {
     return this.membershipPlansService.findOne(id);
   }
 
   @Patch(':id')
+  @HttpCode(HttpStatus.OK)
   update(
     @Param('id') id: string,
     @Body() updateMembershipPlanDto: UpdateMembershipPlanDto,
-  ) {
+  ): Promise<MembershipPlan> {
     return this.membershipPlansService.update(id, updateMembershipPlanDto);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
+  @HttpCode(HttpStatus.OK)
+  remove(@Param('id') id: string): Promise<MembershipPlan> {
     return this.membershipPlansService.remove(id);
   }
 }

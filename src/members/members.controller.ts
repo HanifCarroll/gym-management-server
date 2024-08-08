@@ -3,6 +3,8 @@ import {
   Controller,
   Delete,
   Get,
+  HttpCode,
+  HttpStatus,
   Param,
   Patch,
   Post,
@@ -10,33 +12,35 @@ import {
 import { MembersService } from './members.service';
 import { CreateMemberDto } from './dto/create-member.dto';
 import { UpdateMemberDto } from './dto/update-member.dto';
+import { Member } from './entities/member.entity';
+import { ApiTags } from '@nestjs/swagger';
 
+@ApiTags('members')
 @Controller('members')
 export class MembersController {
   constructor(private readonly memberService: MembersService) {}
 
   @Post()
-  create(@Body() createMemberDto: CreateMemberDto) {
+  @HttpCode(HttpStatus.CREATED)
+  create(@Body() createMemberDto: CreateMemberDto): Promise<Member> {
     return this.memberService.create(createMemberDto);
   }
 
   @Get()
-  findAll() {
+  @HttpCode(HttpStatus.OK)
+  findAll(): Promise<Member[]> {
     return this.memberService.findAll();
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.memberService.findOne(id);
-  }
-
   @Patch(':id')
-  update(@Body() updateMemberDto: UpdateMemberDto) {
+  @HttpCode(HttpStatus.OK)
+  update(@Body() updateMemberDto: UpdateMemberDto): Promise<Member> {
     return this.memberService.update(updateMemberDto);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
+  @HttpCode(HttpStatus.OK)
+  remove(@Param('id') id: string): Promise<Member> {
     return this.memberService.remove(id);
   }
 }

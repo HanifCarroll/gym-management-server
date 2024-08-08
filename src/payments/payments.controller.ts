@@ -1,37 +1,53 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Post,
+} from '@nestjs/common';
 import { PaymentService } from './payments.service';
+import { Payment } from './entities/payment.entity';
+import { CreatePaymentResponse } from './entities/create-payment-response';
+import { ApiTags } from '@nestjs/swagger';
 
+@ApiTags('payments')
 @Controller('payments')
 export class PaymentController {
   constructor(private paymentService: PaymentService) {}
 
   @Post('initiate')
-  async initiatePayment(@Body() body: { memberId: string; amount: number }) {
-    const paymentData = await this.paymentService.createPayment(
-      body.memberId,
-      body.amount,
-    );
-
-    return {
-      paymentId: paymentData.paymentId,
-      clientSecret: paymentData.clientSecret,
-      paymentIntentId: paymentData.paymentIntentId,
-    };
+  @HttpCode(HttpStatus.OK)
+  async initiatePayment(
+    @Body() body: { memberId: string; amount: number },
+  ): Promise<CreatePaymentResponse> {
+    return this.paymentService.createPayment(body.memberId, body.amount);
   }
 
   @Post('confirm/:paymentIntentId')
-  async confirmPayment(@Param('paymentIntentId') paymentIntentId: string) {
+  @HttpCode(HttpStatus.OK)
+  async confirmPayment(
+    @Param('paymentIntentId') paymentIntentId: string,
+  ): Promise<{
+    success: boolean;
+    payment: Payment;
+  }> {
     const payment = await this.paymentService.confirmPayment(paymentIntentId);
     return { success: true, payment };
   }
 
   @Get('history/:memberId')
-  async getPaymentHistory(@Param('memberId') memberId: string) {
+  @HttpCode(HttpStatus.OK)
+  async getPaymentHistory(
+    @Param('memberId') memberId: string,
+  ): Promise<Payment[]> {
     return this.paymentService.getPaymentHistory(memberId);
   }
 
   @Get('history')
-  async getAllPayments(@Param('memberId') memberId: string) {
-    return this.paymentService.getAllPayments();
+  @HttpCode(HttpStatus.OK)
+  async getAllPayments(): Promise<Payment[]> {
+    return this.paymentService.getPaymentHistory();
   }
 }

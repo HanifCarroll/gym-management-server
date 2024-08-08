@@ -9,7 +9,9 @@ import {
 } from '@nestjs/common';
 import { CheckInService } from './check-in.service';
 import { CheckIn } from './entities/check-in.entity';
+import { ApiTags } from '@nestjs/swagger';
 
+@ApiTags('check-in')
 @Controller('check-in')
 export class CheckInController {
   constructor(private checkInService: CheckInService) {}

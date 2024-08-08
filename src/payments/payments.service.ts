@@ -1,8 +1,13 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
 import { SupabaseService } from '../supabase/supabase.service';
 import { StripeService } from '../stripe/stripe.service';
 import { transformSupabaseResultToCamelCase } from '../utils';
 import { Payment } from './entities/payment.entity';
+import { CreatePaymentResponse } from './entities/create-payment-response';
 
 @Injectable()
 export class PaymentService {
@@ -14,11 +19,7 @@ export class PaymentService {
   async createPayment(
     memberId: string,
     amount: number,
-  ): Promise<{
-    paymentId: string;
-    clientSecret: string;
-    paymentIntentId: string;
-  }> {
+  ): Promise<CreatePaymentResponse> {
     const supabase = this.supabaseService.getClient();
 
     // Check if member exists
@@ -60,7 +61,7 @@ export class PaymentService {
     };
   }
 
-  async confirmPayment(paymentIntentId: string) {
+  async confirmPayment(paymentIntentId: string): Promise<Payment> {
     const supabase = this.supabaseService.getClient();
 
     // Find the payment
@@ -141,35 +142,26 @@ export class PaymentService {
       }
     }
 
-    return transformSupabaseResultToCamelCase(payment);
+    return transformSupabaseResultToCamelCase<Payment>(payment);
   }
 
-  async getPaymentHistory(memberId: string): Promise<Payment[]> {
-    const { data, error } = await this.supabaseService
-      .getClient()
-      .from('payment')
-      .select('*')
-      .eq('member_id', memberId)
-      .order('date', { ascending: false });
-
-    if (error) {
-      throw new Error('Failed to fetch payment history');
-    }
-
-    return transformSupabaseResultToCamelCase(data);
-  }
-
-  async getAllPayments(): Promise<Payment[]> {
-    const { data, error } = await this.supabaseService
-      .getClient()
+  async getPaymentHistory(memberId?: string): Promise<Payment[]> {
+    const client = this.supabaseService.getClient();
+    let query = client
       .from('payment')
       .select('*')
       .order('date', { ascending: false });
 
-    if (error) {
-      throw new Error('Failed to fetch payment history');
+    if (memberId) {
+      query = query.eq('member_id', memberId);
     }
 
-    return transformSupabaseResultToCamelCase(data);
+    const { data, error } = await query;
+
+    if (error) {
+      throw new InternalServerErrorException('Failed to fetch payment history');
+    }
+
+    return transformSupabaseResultToCamelCase<Payment[]>(data);
   }
 }
