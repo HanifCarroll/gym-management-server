@@ -1,5 +1,4 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { transformSupabaseResultToCamelCase } from '../utils';
 import { CheckIn } from './entities/check-in.entity';
 import { MemberRepository } from '../members/member.repository';
 import { CheckInRepository } from './check-in.repository';
@@ -18,9 +17,7 @@ export class CheckInService {
       throw new BadRequestException('Member is not active');
     }
 
-    const newCheckIn = await this.checkInRepository.create(memberId);
-
-    return transformSupabaseResultToCamelCase<CheckIn>(newCheckIn);
+    return this.checkInRepository.create(memberId);
   }
 
   async getHistoricalCheckIns(memberId?: string): Promise<CheckIn[]> {

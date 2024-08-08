@@ -1,30 +1,35 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import { SupabaseClient } from '@supabase/supabase-js';
 import { SupabaseService } from '../supabase/supabase.service';
 import { transformSupabaseResultToCamelCase } from '../utils';
 import { CheckIn } from './entities/check-in.entity';
 
 @Injectable()
 export class CheckInRepository {
-  constructor(private supabaseService: SupabaseService) {}
+  private readonly db: SupabaseClient;
+
+  constructor(private supabaseService: SupabaseService) {
+    this.db = this.supabaseService.getClient();
+  }
 
   async create(memberId: string): Promise<CheckIn> {
-    const supabase = this.supabaseService.getClient();
-    const { data, error } = await supabase
+    const { data, error } = await this.db
       .from('check_in')
       .insert({ member_id: memberId })
       .select()
       .single();
 
     if (error) {
-      throw new InternalServerErrorException('Failed to create check-in');
+      throw new InternalServerErrorException(
+        `Failed to create check-in: ${error.message}`,
+      );
     }
 
     return transformSupabaseResultToCamelCase<CheckIn>(data);
   }
 
   async getHistory(memberId?: string): Promise<CheckIn[]> {
-    let query = this.supabaseService
-      .getClient()
+    let query = this.db
       .from('check_in')
       .select(
         `
@@ -47,7 +52,7 @@ export class CheckInRepository {
 
     if (error) {
       throw new InternalServerErrorException(
-        'Failed to retrieve historical check-ins',
+        `Failed to retrieve historical check-ins: ${error.message}`,
       );
     }
 

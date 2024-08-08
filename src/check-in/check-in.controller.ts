@@ -9,7 +9,7 @@ import {
 } from '@nestjs/common';
 import { CheckInService } from './check-in.service';
 import { CheckIn } from './entities/check-in.entity';
-import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 @ApiTags('check-in')
 @Controller('check-in')
@@ -36,8 +36,9 @@ export class CheckInController {
     description: 'Successfully retrieved historical check-ins',
     type: [CheckIn],
   })
+  @ApiQuery({ name: 'memberId', required: false, type: String })
   async getHistoricalCheckIns(
-    @Query('memberId') memberId: string,
+    @Query('memberId') memberId?: string,
   ): Promise<CheckIn[]> {
     return this.checkInService.getHistoricalCheckIns(memberId);
   }

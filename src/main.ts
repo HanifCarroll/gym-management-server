@@ -18,9 +18,8 @@ async function bootstrap() {
   // Ensure incoming dating is validated using rules defined in DTOs.
   app.useGlobalPipes(
     new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transform: true,
+      whitelist: true, // Strip away un-decorated properties on the DTO
+      forbidNonWhitelisted: true, // Throw an error if there are unrecognized properties
     }),
   );
 
