@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { SupabaseService } from '../supabase/supabase.service';
-import { transformSupabaseResult } from '../utils';
+import { transformSupabaseResultToCamelCase } from '../utils';
 
 @Injectable()
 export class CheckInService {
@@ -33,14 +33,13 @@ export class CheckInService {
       .from('check_in')
       .insert({ member_id: memberId })
       .select()
-      .single()
-      .then(transformSupabaseResult);
+      .single();
 
     if (error) {
       throw new Error('Failed to create check-in');
     }
 
-    return data;
+    return transformSupabaseResultToCamelCase(data);
   }
 
   async getHistoricalCheckIns(memberId?: string): Promise<any[]> {
@@ -65,12 +64,12 @@ export class CheckInService {
       query = query.eq('member_id', memberId);
     }
 
-    const { data, error } = await query.then(transformSupabaseResult);
+    const { data, error } = await query;
 
     if (error) {
       throw new Error('Failed to retrieve historical check-ins');
     }
 
-    return data;
+    return transformSupabaseResultToCamelCase(data);
   }
 }

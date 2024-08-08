@@ -2,7 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateMembershipPlanDto } from './dto/create-membership-plan.dto';
 import { UpdateMembershipPlanDto } from './dto/update-membership-plan.dto';
 import { SupabaseService } from '../supabase/supabase.service';
-import { camelToSnakeCase, transformSupabaseResult } from '../utils';
+import { camelToSnakeCase, transformSupabaseResultToCamelCase } from '../utils';
 
 @Injectable()
 export class MembershipPlansService {
@@ -15,22 +15,20 @@ export class MembershipPlansService {
       .from('membership_plan')
       .insert(snakeCaseDto)
       .select()
-      .single()
-      .then(transformSupabaseResult);
+      .single();
 
     if (error) throw error;
-    return data;
+    return transformSupabaseResultToCamelCase(data);
   }
 
   async findAll() {
     const { data, error } = await this.supabaseService
       .getClient()
       .from('membership_plan')
-      .select('*')
-      .then(transformSupabaseResult);
+      .select('*');
 
     if (error) throw error;
-    return data;
+    return transformSupabaseResultToCamelCase(data);
   }
 
   async findOne(id: string) {
@@ -39,11 +37,10 @@ export class MembershipPlansService {
       .from('membership_plan')
       .select('*')
       .eq('id', id)
-      .single()
-      .then(transformSupabaseResult);
+      .single();
 
     if (error) throw error;
-    return data;
+    return transformSupabaseResultToCamelCase(data);
   }
 
   async update(id: string, updateMembershipPlanDto: UpdateMembershipPlanDto) {
@@ -54,11 +51,10 @@ export class MembershipPlansService {
       .update(snakeCaseDto)
       .eq('id', id)
       .select()
-      .single()
-      .then(transformSupabaseResult);
+      .single();
 
     if (error) throw error;
-    return data;
+    return transformSupabaseResultToCamelCase(data);
   }
 
   async remove(id: string) {
@@ -95,7 +91,7 @@ export class MembershipPlansService {
         );
       }
 
-      return transformSupabaseResult(data);
+      return transformSupabaseResultToCamelCase(data);
     } catch (error) {
       throw error;
     }

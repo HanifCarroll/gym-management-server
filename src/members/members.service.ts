@@ -2,7 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateMemberDto } from './dto/create-member.dto';
 import { UpdateMemberDto } from './dto/update-member.dto';
 import { SupabaseService } from '../supabase/supabase.service';
-import { camelToSnakeCase, transformSupabaseResult } from '../utils';
+import { camelToSnakeCase, transformSupabaseResultToCamelCase } from '../utils';
 
 @Injectable()
 export class MembersService {
@@ -15,22 +15,20 @@ export class MembersService {
       .from('member')
       .insert(snakeCaseDto)
       .select()
-      .single()
-      .then(transformSupabaseResult);
+      .single();
 
     if (error) throw error;
-    return data;
+    return transformSupabaseResultToCamelCase(data);
   }
 
   async findAll() {
     const { data, error } = await this.supabaseService
       .getClient()
       .from('member')
-      .select('id, first_name, last_name, email, phone, status')
-      .then(transformSupabaseResult);
+      .select('id, first_name, last_name, email, phone, status');
 
     if (error) throw error;
-    return data;
+    return transformSupabaseResultToCamelCase(data);
   }
 
   findOne(id: string) {
@@ -44,11 +42,10 @@ export class MembersService {
       .from('member')
       .update(snakeCaseDto)
       .eq('id', updateMemberDto.id)
-      .select('id, first_name, last_name, email, phone, status')
-      .then(transformSupabaseResult);
+      .select('id, first_name, last_name, email, phone, status');
 
     if (error) throw error;
-    return data;
+    return transformSupabaseResultToCamelCase(data);
   }
 
   async remove(id: string) {
@@ -57,8 +54,7 @@ export class MembersService {
       .from('member')
       .delete()
       .eq('id', id)
-      .select()
-      .then(transformSupabaseResult);
+      .select();
 
     if (error) {
       if (error.code === 'PGRST116') {
@@ -71,6 +67,6 @@ export class MembersService {
       throw new NotFoundException(`Member with ID ${id} not found`);
     }
 
-    return data;
+    return transformSupabaseResultToCamelCase(data);
   }
 }

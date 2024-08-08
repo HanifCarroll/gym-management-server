@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { SupabaseService } from '../supabase/supabase.service';
 import { StripeService } from '../stripe/stripe.service';
-import { transformSupabaseResult } from '../utils';
+import { transformSupabaseResultToCamelCase } from '../utils';
 
 @Injectable()
 export class PaymentService {
@@ -133,39 +133,37 @@ export class PaymentService {
       }
     }
 
-    return payment;
+    return transformSupabaseResultToCamelCase(payment);
   }
 
   async getPaymentHistory(memberId: string): Promise<any[]> {
     const supabase = this.supabaseService.getClient();
 
-    const { data: payments, error } = await supabase
+    const { data, error } = await supabase
       .from('payment')
       .select('*')
       .eq('member_id', memberId)
-      .order('date', { ascending: false })
-      .then(transformSupabaseResult);
+      .order('date', { ascending: false });
 
     if (error) {
       throw new Error('Failed to fetch payment history');
     }
 
-    return payments;
+    return transformSupabaseResultToCamelCase(data);
   }
 
   async getAllPayments(): Promise<any[]> {
     const supabase = this.supabaseService.getClient();
 
-    const { data: payments, error } = await supabase
+    const { data, error } = await supabase
       .from('payment')
       .select('*')
-      .order('date', { ascending: false })
-      .then(transformSupabaseResult);
+      .order('date', { ascending: false });
 
     if (error) {
       throw new Error('Failed to fetch payment history');
     }
 
-    return payments;
+    return transformSupabaseResultToCamelCase(data);
   }
 }

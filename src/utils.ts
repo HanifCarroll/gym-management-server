@@ -1,5 +1,3 @@
-import { PostgrestResponse } from '@supabase/supabase-js';
-
 export function camelToSnakeCase(
   obj: Record<string, any>,
 ): Record<string, any> {
@@ -47,29 +45,6 @@ function snakeToCamelCase(obj: any): any {
   return obj;
 }
 
-export function transformSupabaseResult<T>(result: PostgrestResponse<T>): {
-  data: T | T[] | null;
-  error: any;
-} {
-  if (result.error) {
-    return { data: null, error: result.error };
-  }
-
-  if (!result.data) {
-    return { data: null, error: null };
-  }
-
-  if (Array.isArray(result.data)) {
-    return {
-      data: result.data.map(
-        (item) => snakeToCamelCase(item as Record<string, any>) as T,
-      ),
-      error: null,
-    };
-  }
-
-  return {
-    data: snakeToCamelCase(result.data as Record<string, any>) as T,
-    error: null,
-  };
+export function transformSupabaseResultToCamelCase<T>(result: any): T {
+  return snakeToCamelCase(result) as T;
 }
