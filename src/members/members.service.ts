@@ -17,6 +17,7 @@ export class MembersService {
     const existingMember = await this.memberRepository.findByEmail(
       createMemberDto.email,
     );
+
     if (existingMember) {
       throw new BadRequestException(
         `Member with email ${createMemberDto.email} already exists`,
@@ -32,9 +33,11 @@ export class MembersService {
 
   async findById(id: string): Promise<Member> {
     const member = await this.memberRepository.findById(id);
+
     if (!member) {
       throw new NotFoundException(`Member with ID ${id} not found`);
     }
+
     return member;
   }
 
@@ -47,6 +50,7 @@ export class MembersService {
       const existingMember = await this.memberRepository.findByEmail(
         updateMemberDto.email,
       );
+
       if (existingMember && existingMember.id !== updateMemberDto.id) {
         throw new BadRequestException(
           `Member with email ${updateMemberDto.email} already exists`,
@@ -58,9 +62,6 @@ export class MembersService {
   }
 
   async remove(id: string): Promise<Member> {
-    // Check if member exists
-    await this.findById(id);
-
     return this.memberRepository.remove(id);
   }
 }

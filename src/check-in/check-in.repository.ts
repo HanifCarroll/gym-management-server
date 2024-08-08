@@ -1,20 +1,20 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
-import { SupabaseClient } from '@supabase/supabase-js';
 import { SupabaseService } from '../supabase/supabase.service';
 import { transformSupabaseResultToCamelCase } from '../utils';
 import { CheckIn } from './entities/check-in.entity';
 
 @Injectable()
 export class CheckInRepository {
-  private readonly db: SupabaseClient;
+  private readonly tableName = 'check_in';
 
-  constructor(private supabaseService: SupabaseService) {
-    this.db = this.supabaseService.getClient();
+  constructor(private supabaseService: SupabaseService) {}
+
+  private get db() {
+    return this.supabaseService.getClient().from(this.tableName);
   }
 
   async create(memberId: string): Promise<CheckIn> {
     const { data, error } = await this.db
-      .from('check_in')
       .insert({ member_id: memberId })
       .select()
       .single();
@@ -30,7 +30,6 @@ export class CheckInRepository {
 
   async getHistory(memberId?: string): Promise<CheckIn[]> {
     let query = this.db
-      .from('check_in')
       .select(
         `
         *,

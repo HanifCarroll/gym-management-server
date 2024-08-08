@@ -13,7 +13,7 @@ import { MembershipPlansService } from './membership-plans.service';
 import { CreateMembershipPlanDto } from './dto/create-membership-plan.dto';
 import { UpdateMembershipPlanDto } from './dto/update-membership-plan.dto';
 import { MembershipPlan } from './entities/membership-plan.entity';
-import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 @ApiTags('membership-plans')
 @Controller('membership-plans')
@@ -26,9 +26,13 @@ export class MembershipPlansController {
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Create a new membership plan' })
   @ApiResponse({
-    status: 201,
+    status: HttpStatus.CREATED,
     description: 'Membership plan successfully created',
     type: MembershipPlan,
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Invalid input data or duplicate plan name',
   })
   create(
     @Body() createMembershipPlanDto: CreateMembershipPlanDto,
@@ -40,7 +44,7 @@ export class MembershipPlansController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Get all membership plans' })
   @ApiResponse({
-    status: 200,
+    status: HttpStatus.OK,
     description: 'Successfully retrieved all membership plans',
     type: [MembershipPlan],
   })
@@ -52,10 +56,15 @@ export class MembershipPlansController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Get a membership plan by ID' })
   @ApiResponse({
-    status: 200,
+    status: HttpStatus.OK,
     description: 'Successfully retrieved the membership plan',
     type: MembershipPlan,
   })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Membership plan not found',
+  })
+  @ApiParam({ name: 'id', type: 'string' })
   findOne(@Param('id') id: string): Promise<MembershipPlan> {
     return this.membershipPlansService.findOne(id);
   }
@@ -64,10 +73,19 @@ export class MembershipPlansController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Update a membership plan by ID' })
   @ApiResponse({
-    status: 200,
+    status: HttpStatus.OK,
     description: 'Membership plan successfully updated',
     type: MembershipPlan,
   })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Membership plan not found',
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Invalid input data or duplicate plan name',
+  })
+  @ApiParam({ name: 'id', type: 'string' })
   update(
     @Param('id') id: string,
     @Body() updateMembershipPlanDto: UpdateMembershipPlanDto,
@@ -79,10 +97,15 @@ export class MembershipPlansController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Delete a membership plan by ID' })
   @ApiResponse({
-    status: 200,
+    status: HttpStatus.OK,
     description: 'Membership plan successfully deleted',
     type: MembershipPlan,
   })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Membership plan not found',
+  })
+  @ApiParam({ name: 'id', type: 'string' })
   remove(@Param('id') id: string): Promise<MembershipPlan> {
     return this.membershipPlansService.remove(id);
   }

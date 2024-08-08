@@ -11,27 +11,33 @@ import { Enums } from '../supabase/supabase';
 
 @Injectable()
 export class PaymentRepository {
+  private readonly tableName = 'payment';
+  private readonly selectFields =
+    'id, member_id, amount, date, status, stripe_payment_intent_id, created_at, updated_at';
+
   constructor(private supabaseService: SupabaseService) {}
+
+  private get db() {
+    return this.supabaseService.getClient().from(this.tableName);
+  }
 
   async createPaymentRecord(
     memberId: string,
     amount: number,
     stripePaymentIntentId: string,
   ): Promise<CreatePaymentResponse> {
-    const { data, error } = await this.supabaseService
-      .getClient()
-      .from('payment')
+    const { data, error } = await this.db
       .insert({
         member_id: memberId,
         amount,
         status: 'Pending',
         stripe_payment_intent_id: stripePaymentIntentId,
       })
-      .select()
+      .select(this.selectFields)
       .single();
 
     if (error) {
-      throw new InternalServerErrorException('Failed to create payment record');
+      this.handleError(error, 'create payment record');
     }
 
     return {
@@ -42,15 +48,19 @@ export class PaymentRepository {
   }
 
   async findPaymentByIntentId(paymentIntentId: string): Promise<Payment> {
-    const { data, error } = await this.supabaseService
-      .getClient()
-      .from('payment')
-      .select('*, member(*)')
+    const { data, error } = await this.db
+      .select(`${this.selectFields}, member(*)`)
       .eq('stripe_payment_intent_id', paymentIntentId)
       .single();
 
     if (error) {
-      throw new NotFoundException('Payment not found');
+      this.handleError(error, 'find payment by intent ID');
+    }
+
+    if (!data) {
+      throw new NotFoundException(
+        `Payment with intent ID ${paymentIntentId} not found`,
+      );
     }
 
     return transformSupabaseResultToCamelCase<Payment>(data);
@@ -60,18 +70,16 @@ export class PaymentRepository {
     paymentId: string,
     status: Enums<'payment_status'>,
   ): Promise<void> {
-    const { error } = await this.supabaseService
-      .getClient()
-      .from('payment')
+    const { error } = await this.db
       .update({ status: status })
       .eq('id', paymentId);
 
     if (error) {
-      throw new InternalServerErrorException('Failed to update payment status');
+      this.handleError(error, 'update payment status');
     }
   }
 
-  async findExistingMembership(memberId: string): Promise<any> {
+  async findExistingMembership(memberId: string): Promise<any | null> {
     const { data, error } = await this.supabaseService
       .getClient()
       .from('membership')
@@ -82,9 +90,7 @@ export class PaymentRepository {
       .single();
 
     if (error && error.code !== 'PGRST116') {
-      throw new InternalServerErrorException(
-        'Failed to check existing membership',
-      );
+      this.handleError(error, 'check existing membership');
     }
 
     return data;
@@ -101,7 +107,7 @@ export class PaymentRepository {
       .eq('id', membershipId);
 
     if (error) {
-      throw new InternalServerErrorException('Failed to update membership');
+      this.handleError(error, 'update membership');
     }
   }
 
@@ -122,15 +128,13 @@ export class PaymentRepository {
       });
 
     if (error) {
-      throw new InternalServerErrorException('Failed to create new membership');
+      this.handleError(error, 'create new membership');
     }
   }
 
   async getPaymentHistory(memberId?: string): Promise<Payment[]> {
-    let query = this.supabaseService
-      .getClient()
-      .from('payment')
-      .select('*')
+    let query = this.db
+      .select(this.selectFields)
       .order('date', { ascending: false });
 
     if (memberId) {
@@ -140,9 +144,19 @@ export class PaymentRepository {
     const { data, error } = await query;
 
     if (error) {
-      throw new InternalServerErrorException('Failed to fetch payment history');
+      this.handleError(error, 'fetch payment history');
     }
 
     return transformSupabaseResultToCamelCase<Payment[]>(data);
+  }
+
+  private handleError(error: any, operation: string): never {
+    if (error?.code === 'PGRST116') {
+      throw new NotFoundException(`Payment not found for ${operation}`);
+    }
+
+    throw new InternalServerErrorException(
+      `Failed to ${operation}: ${error.message}`,
+    );
   }
 }

@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
@@ -6,72 +7,84 @@ import {
   HttpStatus,
   Param,
   Post,
+  Query,
 } from '@nestjs/common';
 import { PaymentService } from './payments.service';
 import { Payment } from './entities/payment.entity';
 import { CreatePaymentResponse } from './entities/create-payment-response';
-import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiOperation,
+  ApiParam,
+  ApiQuery,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
+import { InitiatePaymentDto } from './dto/initiate-payment.dto';
 
 @ApiTags('payments')
 @Controller('payments')
 export class PaymentController {
-  constructor(private paymentService: PaymentService) {}
+  constructor(private readonly paymentService: PaymentService) {}
 
   @Post('initiate')
-  @HttpCode(HttpStatus.OK)
+  @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Initiate a new payment' })
   @ApiResponse({
-    status: 200,
+    status: HttpStatus.CREATED,
     description: 'Payment successfully initiated',
     type: CreatePaymentResponse,
   })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Invalid input data',
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Member not found',
+  })
   async initiatePayment(
-    @Body() body: { memberId: string; amount: number },
+    @Body() initiatePaymentDto: InitiatePaymentDto,
   ): Promise<CreatePaymentResponse> {
-    return this.paymentService.createPayment(body.memberId, body.amount);
+    if (initiatePaymentDto.amount <= 0) {
+      throw new BadRequestException('Payment amount must be greater than zero');
+    }
+    return this.paymentService.createPayment(
+      initiatePaymentDto.memberId,
+      initiatePaymentDto.amount,
+    );
   }
 
   @Post('confirm/:paymentIntentId')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Confirm a payment' })
   @ApiResponse({
-    status: 200,
+    status: HttpStatus.OK,
     description: 'Payment successfully confirmed',
     type: Payment,
   })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Payment not found',
+  })
+  @ApiParam({ name: 'paymentIntentId', type: 'string' })
   async confirmPayment(
     @Param('paymentIntentId') paymentIntentId: string,
-  ): Promise<{
-    success: boolean;
-    payment: Payment;
-  }> {
-    const payment = await this.paymentService.confirmPayment(paymentIntentId);
-    return { success: true, payment };
-  }
-
-  @Get('history/:memberId')
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Get payment history for a specific member' })
-  @ApiResponse({
-    status: 200,
-    description: 'Successfully retrieved payment history',
-    type: [Payment],
-  })
-  async getPaymentHistory(
-    @Param('memberId') memberId: string,
-  ): Promise<Payment[]> {
-    return this.paymentService.getPaymentHistory(memberId);
+  ): Promise<Payment> {
+    return this.paymentService.confirmPayment(paymentIntentId);
   }
 
   @Get('history')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Get all payment histories' })
+  @ApiOperation({ summary: 'Get payment history' })
   @ApiResponse({
-    status: 200,
-    description: 'Successfully retrieved all payment histories',
+    status: HttpStatus.OK,
+    description: 'Successfully retrieved payment history',
     type: [Payment],
   })
-  async getAllPayments(): Promise<Payment[]> {
-    return this.paymentService.getPaymentHistory();
+  @ApiQuery({ name: 'memberId', required: false, type: 'string' })
+  async getPaymentHistory(
+    @Query('memberId') memberId?: string,
+  ): Promise<Payment[]> {
+    return this.paymentService.getPaymentHistory(memberId);
   }
 }

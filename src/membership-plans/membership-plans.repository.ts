@@ -14,7 +14,15 @@ import {
 
 @Injectable()
 export class MembershipPlanRepository {
-  constructor(private readonly supabaseService: SupabaseService) {}
+  private readonly tableName = 'membership_plan';
+  private readonly selectFields =
+    'id, name, duration, price, created_at, updated_at';
+
+  constructor(private supabaseService: SupabaseService) {}
+
+  private get db() {
+    return this.supabaseService.getClient().from(this.tableName);
+  }
 
   async create(
     createMembershipPlanDto: CreateMembershipPlanDto,
@@ -22,56 +30,40 @@ export class MembershipPlanRepository {
     const snakeCaseDto = camelToSnakeCase(
       createMembershipPlanDto,
     ) as DbMembershipPlan;
-    const { data, error } = await this.supabaseService
-      .getClient()
-      .from('membership_plan')
-      .insert(snakeCaseDto)
-      .select()
+    const { data, error } = await this.db
+      .insert([snakeCaseDto])
+      .select(this.selectFields)
       .single();
 
     if (error) {
-      throw new InternalServerErrorException(
-        'Failed to create membership plan',
-        error.message,
-      );
+      this.handleError(error, 'create membership plan');
     }
 
     return transformSupabaseResultToCamelCase<MembershipPlan>(data);
   }
 
   async findAll(): Promise<MembershipPlan[]> {
-    const { data, error } = await this.supabaseService
-      .getClient()
-      .from('membership_plan')
-      .select('*');
+    const { data, error } = await this.db.select(this.selectFields);
 
     if (error) {
-      throw new InternalServerErrorException(
-        'Failed to fetch membership plans',
-        error.message,
-      );
+      this.handleError(error, 'retrieve membership plans');
     }
 
     return transformSupabaseResultToCamelCase<MembershipPlan[]>(data);
   }
 
   async findOne(id: string): Promise<MembershipPlan> {
-    const { data, error } = await this.supabaseService
-      .getClient()
-      .from('membership_plan')
-      .select('*')
+    const { data, error } = await this.db
+      .select(this.selectFields)
       .eq('id', id)
       .single();
 
     if (error) {
-      throw new InternalServerErrorException(
-        'Failed to fetch membership plan',
-        error.message,
-      );
+      this.handleError(error, 'retrieve membership plan');
     }
 
     if (!data) {
-      throw new NotFoundException(`Membership plan with ID "${id}" not found`);
+      throw new NotFoundException(`Membership plan with ID ${id} not found`);
     }
 
     return transformSupabaseResultToCamelCase<MembershipPlan>(data);
@@ -82,23 +74,18 @@ export class MembershipPlanRepository {
     updateMembershipPlanDto: UpdateMembershipPlanDto,
   ): Promise<MembershipPlan> {
     const snakeCaseDto = camelToSnakeCase(updateMembershipPlanDto);
-    const { data, error } = await this.supabaseService
-      .getClient()
-      .from('membership_plan')
+    const { data, error } = await this.db
       .update(snakeCaseDto)
       .eq('id', id)
-      .select()
+      .select(this.selectFields)
       .single();
 
     if (error) {
-      throw new InternalServerErrorException(
-        'Failed to update membership plan',
-        error.message,
-      );
+      this.handleError(error, 'update membership plan');
     }
 
     if (!data) {
-      throw new NotFoundException(`Membership plan with ID "${id}" not found`);
+      throw new NotFoundException(`Membership plan with ID ${id} not found`);
     }
 
     return transformSupabaseResultToCamelCase<MembershipPlan>(data);
@@ -114,36 +101,49 @@ export class MembershipPlanRepository {
       .eq('plan_id', id);
 
     if (membershipDeleteError) {
-      throw new InternalServerErrorException(
-        'Error deleting associated memberships',
-        membershipDeleteError.message,
-      );
+      this.handleError(membershipDeleteError, 'delete associated memberships');
     }
 
     // Then, delete the membership plan
-    const { data, error } = await client
-      .from('membership_plan')
+    const { data, error } = await this.db
       .delete()
       .eq('id', id)
-      .select()
+      .select(this.selectFields)
       .single();
 
     if (error) {
-      if (error.code === 'PGRST116') {
-        throw new NotFoundException(
-          `Membership plan with ID "${id}" not found`,
-        );
-      }
-      throw new InternalServerErrorException(
-        'Error deleting membership plan',
-        error.message,
-      );
+      this.handleError(error, 'delete membership plan');
     }
 
     if (!data) {
-      throw new NotFoundException(`Membership plan with ID "${id}" not found`);
+      throw new NotFoundException(`Membership plan with ID ${id} not found`);
     }
 
     return transformSupabaseResultToCamelCase<MembershipPlan>(data);
+  }
+
+  async findByName(name: string): Promise<MembershipPlan | null> {
+    const { data, error } = await this.db
+      .select(this.selectFields)
+      .eq('name', name)
+      .single();
+
+    if (error) {
+      this.handleError(error, 'find membership plan by name');
+    }
+
+    return data
+      ? transformSupabaseResultToCamelCase<MembershipPlan>(data)
+      : null;
+  }
+
+  private handleError(error: any, operation: string): never {
+    if (error?.code === 'PGRST116') {
+      throw new NotFoundException(`Membership plan not found for ${operation}`);
+    }
+
+    throw new InternalServerErrorException(
+      `Failed to ${operation}: ${error.message}`,
+    );
   }
 }
