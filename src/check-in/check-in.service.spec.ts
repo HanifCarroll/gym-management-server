@@ -1,147 +1,175 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import {
-  BadRequestException,
-  InternalServerErrorException,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException } from '@nestjs/common';
 import { CheckInService } from './check-in.service';
 import { SupabaseService } from '../supabase/supabase.service';
-import { supabaseServiceMock } from '../supabase/supabase.service.mock';
-import { transformSupabaseResultToCamelCase } from '../utils';
-
-jest.mock('../utils', () => ({
-  transformSupabaseResultToCamelCase: jest.fn(),
-}));
+import { MemberRepository } from '../members/member.repository';
+import { CheckInRepository } from './check-in.repository';
+import { Member, MemberStatus } from '../members/entities/member.entity';
+import { CheckIn } from './entities/check-in.entity';
 
 describe('CheckInService', () => {
   let service: CheckInService;
+  let memberRepository: jest.Mocked<MemberRepository>;
+  let checkInRepository: jest.Mocked<CheckInRepository>;
 
   beforeEach(async () => {
+    const mockSupabaseService = {};
+    const mockMemberRepository = {
+      findById: jest.fn(),
+    };
+    const mockCheckInRepository = {
+      create: jest.fn(),
+      getHistory: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         CheckInService,
-        {
-          provide: SupabaseService,
-          useValue: supabaseServiceMock,
-        },
+        { provide: SupabaseService, useValue: mockSupabaseService },
+        { provide: MemberRepository, useValue: mockMemberRepository },
+        { provide: CheckInRepository, useValue: mockCheckInRepository },
       ],
     }).compile();
 
     service = module.get<CheckInService>(CheckInService);
-  });
-
-  afterEach(() => {
-    jest.clearAllMocks();
+    memberRepository = module.get(
+      MemberRepository,
+    ) as jest.Mocked<MemberRepository>;
+    checkInRepository = module.get(
+      CheckInRepository,
+    ) as jest.Mocked<CheckInRepository>;
   });
 
   describe('createCheckIn', () => {
-    it('should throw NotFoundException if member is not found', async () => {
-      supabaseServiceMock.single.mockReturnValueOnce({
-        data: null,
-        error: { message: 'Not found' },
-      });
+    it('should create a check-in for an active member', async () => {
+      const memberId = 'active-member-id';
+      const mockMember: Member = {
+        createdAt: '',
+        email: '',
+        firstName: '',
+        lastName: '',
+        updatedAt: '',
+        id: memberId,
+        status: MemberStatus.Active,
+      };
+      const mockCheckIn: CheckIn = {
+        dateTime: new Date().toString(),
+        id: 'check-in-id',
+        memberId: memberId,
+        createdAt: new Date().toString(),
+      };
 
-      await expect(service.createCheckIn('1')).rejects.toThrow(
-        NotFoundException,
+      memberRepository.findById.mockResolvedValue(mockMember);
+      checkInRepository.create.mockResolvedValue(mockCheckIn);
+
+      const result = await service.createCheckIn(memberId);
+
+      expect(memberRepository.findById).toHaveBeenCalledWith(memberId);
+      expect(checkInRepository.create).toHaveBeenCalledWith(memberId);
+      expect(result).toEqual(
+        expect.objectContaining({
+          id: 'check-in-id',
+          dateTime: expect.any(String),
+          memberId: memberId,
+          createdAt: expect.any(String),
+        }),
       );
     });
 
-    it('should throw BadRequestException if member is not active', async () => {
-      supabaseServiceMock.single.mockReturnValueOnce({
-        data: { id: '1', status: 'Inactive' },
-        error: null,
-      });
+    it('should throw BadRequestException for inactive member', async () => {
+      const memberId = 'inactive-member-id';
+      const mockMember: Member = {
+        createdAt: '',
+        email: '',
+        firstName: '',
+        lastName: '',
+        updatedAt: '',
+        id: memberId,
+        status: MemberStatus.Inactive,
+      };
 
-      await expect(service.createCheckIn('1')).rejects.toThrow(
+      memberRepository.findById.mockResolvedValue(mockMember);
+
+      await expect(service.createCheckIn(memberId)).rejects.toThrow(
         BadRequestException,
       );
-    });
-
-    it('should throw InternalServerErrorException if check-in creation fails', async () => {
-      supabaseServiceMock.single
-        .mockReturnValueOnce({
-          data: { id: '1', status: 'Active' },
-          error: null,
-        })
-        .mockReturnValueOnce({
-          data: null,
-          error: { message: 'Insert failed' },
-        });
-
-      await expect(service.createCheckIn('1')).rejects.toThrow(
-        InternalServerErrorException,
-      );
-    });
-
-    it('should create check-in successfully', async () => {
-      const checkInData = { id: '1', member_id: '1' };
-      supabaseServiceMock.single
-        .mockReturnValueOnce({
-          data: { id: '1', status: 'Active' },
-          error: null,
-        })
-        .mockReturnValueOnce({
-          data: checkInData,
-          error: null,
-        });
-
-      (transformSupabaseResultToCamelCase as jest.Mock).mockReturnValueOnce(
-        checkInData,
-      );
-
-      const result = await service.createCheckIn('1');
-      expect(result).toEqual(checkInData);
+      expect(memberRepository.findById).toHaveBeenCalledWith(memberId);
+      expect(checkInRepository.create).not.toHaveBeenCalled();
     });
   });
 
   describe('getHistoricalCheckIns', () => {
-    it('should throw InternalServerErrorException if retrieval fails', async () => {
-      supabaseServiceMock.from.mockReturnValueOnce({
-        select: jest.fn().mockReturnThis(),
-        order: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        data: null,
-        error: { message: 'Query failed' },
-      });
+    it('should return historical check-ins for a specific member', async () => {
+      const memberId = 'member-1';
+      const mockCheckIns: CheckIn[] = [
+        {
+          id: 'check-in-1',
+          memberId: memberId,
+          dateTime: new Date().toString(),
+          createdAt: new Date().toString(),
+        },
+        {
+          id: 'check-in-2',
+          memberId: 'member-2',
+          dateTime: new Date().toString(),
+          createdAt: new Date().toString(),
+        },
+      ];
 
-      await expect(service.getHistoricalCheckIns('1')).rejects.toThrow(
-        InternalServerErrorException,
+      checkInRepository.getHistory.mockResolvedValue(mockCheckIns);
+
+      const result = await service.getHistoricalCheckIns(memberId);
+
+      expect(checkInRepository.getHistory).toHaveBeenCalledWith(memberId);
+      expect(result).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            id: 'check-in-1',
+            memberId,
+            dateTime: expect.any(String),
+            createdAt: expect.any(String),
+          }),
+        ]),
       );
     });
 
-    it('should retrieve historical check-ins successfully for a specific member', async () => {
-      const checkInsData = [{ id: '1', member_id: '1' }];
-      supabaseServiceMock.from.mockReturnValueOnce({
-        select: jest.fn().mockReturnThis(),
-        order: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        data: checkInsData,
-        error: null,
-      });
+    it('should return all historical check-ins when no memberId is provided', async () => {
+      const mockCheckIns: CheckIn[] = [
+        {
+          id: 'check-in-1',
+          memberId: 'member-1',
+          dateTime: new Date().toString(),
+          createdAt: new Date().toString(),
+        },
+        {
+          id: 'check-in-2',
+          memberId: 'member-2',
+          dateTime: new Date().toString(),
+          createdAt: new Date().toString(),
+        },
+      ];
 
-      (transformSupabaseResultToCamelCase as jest.Mock).mockReturnValueOnce(
-        checkInsData,
-      );
-
-      const result = await service.getHistoricalCheckIns('1');
-      expect(result).toEqual(checkInsData);
-    });
-
-    it('should retrieve all historical check-ins successfully', async () => {
-      const checkInsData = [{ id: '1', member_id: '1' }];
-      supabaseServiceMock.from.mockReturnValueOnce({
-        select: jest.fn().mockReturnThis(),
-        order: jest.fn().mockReturnThis(),
-        data: checkInsData,
-        error: null,
-      });
-
-      (transformSupabaseResultToCamelCase as jest.Mock).mockReturnValueOnce(
-        checkInsData,
-      );
+      checkInRepository.getHistory.mockResolvedValue(mockCheckIns);
 
       const result = await service.getHistoricalCheckIns();
-      expect(result).toEqual(checkInsData);
+
+      expect(checkInRepository.getHistory).toHaveBeenCalledWith(undefined);
+      expect(result).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            id: 'check-in-1',
+            memberId: 'member-1',
+            dateTime: expect.any(String),
+            createdAt: expect.any(String),
+          }),
+          expect.objectContaining({
+            id: 'check-in-2',
+            memberId: 'member-2',
+            dateTime: expect.any(String),
+            createdAt: expect.any(String),
+          }),
+        ]),
+      );
     });
   });
 });
