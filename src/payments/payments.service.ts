@@ -1,35 +1,24 @@
-import {
-  Injectable,
-  InternalServerErrorException,
-  NotFoundException,
-} from '@nestjs/common';
-import { SupabaseService } from '../supabase/supabase.service';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { StripeService } from '../stripe/stripe.service';
-import { transformSupabaseResultToCamelCase } from '../utils';
 import { Payment } from './entities/payment.entity';
 import { CreatePaymentResponse } from './entities/create-payment-response';
+import { PaymentRepository } from './payments.repository';
+import { MemberRepository } from '../members/member.repository';
 
 @Injectable()
 export class PaymentService {
   constructor(
-    private supabaseService: SupabaseService,
-    private stripeService: StripeService,
+    private readonly memberRepository: MemberRepository,
+    private readonly paymentRepository: PaymentRepository,
+    private readonly stripeService: StripeService,
   ) {}
 
   async createPayment(
     memberId: string,
     amount: number,
   ): Promise<CreatePaymentResponse> {
-    const supabase = this.supabaseService.getClient();
-
-    // Check if member exists
-    const { data: member, error: memberError } = await supabase
-      .from('member')
-      .select()
-      .eq('id', memberId)
-      .single();
-
-    if (memberError || !member) {
+    const member = await this.memberRepository.findById(memberId);
+    if (!member) {
       throw new NotFoundException('Member not found');
     }
 
@@ -38,130 +27,49 @@ export class PaymentService {
       'usd',
     );
 
-    // Create a new payment record
-    const { data: payment, error: paymentError } = await supabase
-      .from('payment')
-      .insert({
-        member_id: memberId,
-        amount,
-        status: 'Pending',
-        stripe_payment_intent_id: paymentIntent.id,
-      })
-      .select()
-      .single();
+    const paymentResponse = await this.paymentRepository.createPaymentRecord(
+      memberId,
+      amount,
+      paymentIntent.id,
+    );
 
-    if (paymentError) {
-      throw new Error('Failed to create payment record');
-    }
+    paymentResponse.clientSecret = paymentIntent.client_secret;
 
-    return {
-      paymentId: payment.id,
-      clientSecret: paymentIntent.client_secret,
-      paymentIntentId: paymentIntent.id,
-    };
+    return paymentResponse;
   }
 
   async confirmPayment(paymentIntentId: string): Promise<Payment> {
-    const supabase = this.supabaseService.getClient();
+    const payment =
+      await this.paymentRepository.findPaymentByIntentId(paymentIntentId);
 
-    // Find the payment
-    const { data: payment, error: paymentError } = await supabase
-      .from('payment')
-      .select('*, member(*)')
-      .eq('stripe_payment_intent_id', paymentIntentId)
-      .single();
+    await this.paymentRepository.updatePaymentStatus(payment.id, 'Successful');
+    await this.memberRepository.updateMemberStatus(payment.memberId, 'Active');
 
-    if (paymentError || !payment) {
-      throw new NotFoundException('Payment not found');
-    }
-
-    // Update payment status
-    const { error: updatePaymentError } = await supabase
-      .from('payment')
-      .update({ status: 'Successful' })
-      .eq('id', payment.id);
-
-    if (updatePaymentError) {
-      throw new Error('Failed to update payment status');
-    }
-
-    // Update member status
-    const { error: updateMemberError } = await supabase
-      .from('member')
-      .update({ status: 'Active' })
-      .eq('id', payment.member_id);
-
-    if (updateMemberError) {
-      throw new Error('Failed to update member status');
-    }
-
-    // Check for existing membership
-    const { data: existingMembership, error: membershipError } = await supabase
-      .from('membership')
-      .select()
-      .eq('member_id', payment.member_id)
-      .order('end_date', { ascending: false })
-      .limit(1)
-      .single();
-
-    if (membershipError && membershipError.code !== 'PGRST116') {
-      // PGRST116 is the error code for no rows returned
-      throw new Error('Failed to check existing membership');
-    }
+    const existingMembership =
+      await this.paymentRepository.findExistingMembership(payment.memberId);
 
     const now = new Date();
     const thirtyDaysLater = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
 
     if (existingMembership) {
-      // Extend existing membership
       const newEndDate = new Date(existingMembership.end_date);
       newEndDate.setDate(newEndDate.getDate() + 30);
-
-      const { error: updateMembershipError } = await supabase
-        .from('membership')
-        .update({ end_date: newEndDate.toString() })
-        .eq('id', existingMembership.id);
-
-      if (updateMembershipError) {
-        throw new Error('Failed to update membership');
-      }
+      await this.paymentRepository.extendMembership(
+        existingMembership.id,
+        newEndDate.toISOString(),
+      );
     } else {
-      // Create new membership
-      const { error: newMembershipError } = await supabase
-        .from('membership')
-        .insert({
-          member_id: payment.member_id,
-          plan_id: '21c21c00-0f9b-4e73-8442-91debc572959',
-          start_date: now.toISOString(),
-          end_date: thirtyDaysLater.toISOString(),
-          status: 'Active',
-        });
-
-      if (newMembershipError) {
-        throw new Error('Failed to create new membership');
-      }
+      await this.paymentRepository.createNewMembership(
+        payment.memberId,
+        now.toISOString(),
+        thirtyDaysLater.toISOString(),
+      );
     }
 
-    return transformSupabaseResultToCamelCase<Payment>(payment);
+    return payment;
   }
 
   async getPaymentHistory(memberId?: string): Promise<Payment[]> {
-    const client = this.supabaseService.getClient();
-    let query = client
-      .from('payment')
-      .select('*')
-      .order('date', { ascending: false });
-
-    if (memberId) {
-      query = query.eq('member_id', memberId);
-    }
-
-    const { data, error } = await query;
-
-    if (error) {
-      throw new InternalServerErrorException('Failed to fetch payment history');
-    }
-
-    return transformSupabaseResultToCamelCase<Payment[]>(data);
+    return this.paymentRepository.getPaymentHistory(memberId);
   }
 }

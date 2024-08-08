@@ -1,4 +1,3 @@
-import { Enums } from '../../supabase/supabase';
 import { ApiProperty } from '@nestjs/swagger';
 import {
   IsEmail,
@@ -20,7 +19,7 @@ export interface DbMember {
   last_name: string;
   email: string;
   phone?: string;
-  status: Enums<'member_status'>;
+  status: MemberStatus;
   created_at: string;
   updated_at: string;
 }

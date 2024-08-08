@@ -1,11 +1,6 @@
 import { IsEmail, IsEnum, IsNotEmpty, IsString } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-
-enum MemberStatus {
-  Active = 'Active',
-  Inactive = 'Inactive',
-  Suspended = 'Suspended',
-}
+import { MemberStatus } from '../entities/member.entity';
 
 export class CreateMemberDto {
   @ApiProperty({ description: 'The first name of the member' })

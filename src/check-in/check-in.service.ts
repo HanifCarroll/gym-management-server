@@ -1,79 +1,34 @@
-import {
-  BadRequestException,
-  Injectable,
-  InternalServerErrorException,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { SupabaseService } from '../supabase/supabase.service';
 import { transformSupabaseResultToCamelCase } from '../utils';
 import { CheckIn } from './entities/check-in.entity';
+import { MemberRepository } from '../members/member.repository';
+import { CheckInRepository } from './check-in.repository';
 
 @Injectable()
 export class CheckInService {
-  constructor(private supabaseService: SupabaseService) {}
+  constructor(
+    private readonly supabaseService: SupabaseService,
+    private readonly checkInRepository: CheckInRepository,
+    private readonly memberRepository: MemberRepository,
+  ) {}
 
   async createCheckIn(memberId: string): Promise<CheckIn> {
-    const supabase = this.supabaseService.getClient();
-
     // Check if the member exists and is active
-    const { data: memberData, error: memberError } = await supabase
-      .from('member')
-      .select('id, status')
-      .eq('id', memberId)
-      .single();
-
-    if (memberError || !memberData) {
-      throw new NotFoundException('Member not found');
-    }
-
+    const memberData = await this.memberRepository.findById(memberId);
     if (memberData.status !== 'Active') {
       throw new BadRequestException('Member is not active');
     }
 
     // Create the check-in
-    const { data, error } = await supabase
-      .from('check_in')
-      .insert({ member_id: memberId })
-      .select()
-      .single();
+    const newCheckIn = await this.checkInRepository.create(memberId);
 
-    if (error) {
-      throw new InternalServerErrorException('Failed to create check-in');
-    }
-
-    return transformSupabaseResultToCamelCase<CheckIn>(data);
+    return transformSupabaseResultToCamelCase<CheckIn>(newCheckIn);
   }
 
   async getHistoricalCheckIns(memberId?: string): Promise<CheckIn[]> {
-    const supabase = this.supabaseService.getClient();
-    let query = supabase
-      .from('check_in')
-      .select(
-        `
-        *,
-        member:member_id (
-          id,
-          first_name,
-          last_name,
-          email
-        )
-      `,
-      )
-      .order('date_time', { ascending: false });
+    const checkIns = await this.checkInRepository.getHistory(memberId);
 
-    // If given a memberId, restrict the query to records with that memberId.
-    if (memberId) {
-      query = query.eq('member_id', memberId);
-    }
-
-    const { data, error } = await query;
-
-    if (error) {
-      throw new InternalServerErrorException(
-        'Failed to retrieve historical check-ins',
-      );
-    }
-
-    return transformSupabaseResultToCamelCase<CheckIn[]>(data);
+    return transformSupabaseResultToCamelCase<CheckIn[]>(checkIns);
   }
 }

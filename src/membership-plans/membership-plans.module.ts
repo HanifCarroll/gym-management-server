@@ -1,10 +1,10 @@
 import { Module } from '@nestjs/common';
 import { MembershipPlansService } from './membership-plans.service';
 import { MembershipPlansController } from './membership-plans.controller';
-import { SupabaseService } from '../supabase/supabase.service';
+import { MembershipPlanRepository } from './membership-plans.repository';
 
 @Module({
   controllers: [MembershipPlansController],
-  providers: [MembershipPlansService, SupabaseService],
+  providers: [MembershipPlansService, MembershipPlanRepository],
 })
 export class MembershipPlansModule {}
