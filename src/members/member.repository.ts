@@ -12,45 +12,48 @@ import { Enums } from '../supabase/supabase';
 
 @Injectable()
 export class MemberRepository {
+  private readonly tableName = 'member';
+  private readonly selectFields =
+    'id, first_name, last_name, email, phone, status, created_at, updated_at';
+
   constructor(private supabaseService: SupabaseService) {}
+
+  private get supabase() {
+    return this.supabaseService.getClient().from(this.tableName);
+  }
 
   async create(createMemberDto: CreateMemberDto): Promise<Member> {
     const snakeCaseDto = camelToSnakeCase(createMemberDto) as DbMember;
-    const { data, error } = await this.supabaseService
-      .getClient()
-      .from('member')
+    const { data, error } = await this.supabase
       .insert([snakeCaseDto])
-      .select()
+      .select(this.selectFields)
       .single();
 
-    if (error)
-      throw new InternalServerErrorException('Failed to create member');
+    if (error) {
+      this.handleError(error, 'create member');
+    }
 
     return transformSupabaseResultToCamelCase<Member>(data);
   }
 
   async findAll(): Promise<Member[]> {
-    const { data, error } = await this.supabaseService
-      .getClient()
-      .from('member')
-      .select('id, first_name, last_name, email, phone, status');
+    const { data, error } = await this.supabase.select(this.selectFields);
 
-    if (error)
-      throw new InternalServerErrorException('Failed to retrieve members');
+    if (error) {
+      this.handleError(error, 'retrieve members');
+    }
 
     return transformSupabaseResultToCamelCase<Member[]>(data);
   }
 
   async findById(id: string): Promise<Member> {
-    const { data, error } = await this.supabaseService
-      .getClient()
-      .from('member')
-      .select('id, first_name, last_name, email, phone, status')
+    const { data, error } = await this.supabase
+      .select(this.selectFields)
       .eq('id', id)
       .single();
 
     if (error) {
-      throw new InternalServerErrorException('Failed to retrieve member');
+      this.handleError(error, 'retrieve member');
     }
 
     if (!data) {
@@ -62,59 +65,73 @@ export class MemberRepository {
 
   async update(updateMemberDto: UpdateMemberDto): Promise<Member> {
     const snakeCaseDto = camelToSnakeCase(updateMemberDto);
-    const { data, error } = await this.supabaseService
-      .getClient()
-      .from('member')
+    const { data, error } = await this.supabase
       .update(snakeCaseDto)
       .eq('id', updateMemberDto.id)
-      .select('id, first_name, last_name, email, phone, status');
+      .select(this.selectFields)
+      .single();
 
-    if (error)
-      throw new InternalServerErrorException('Failed to update member');
+    if (error) {
+      this.handleError(error, 'update member');
+    }
 
-    if (!data || data.length === 0) {
+    if (!data) {
       throw new NotFoundException(
         `Member with ID ${updateMemberDto.id} not found`,
       );
     }
 
-    return transformSupabaseResultToCamelCase<Member>(data[0]);
+    return transformSupabaseResultToCamelCase<Member>(data);
   }
 
   async remove(id: string): Promise<Member> {
-    const { data, error } = await this.supabaseService
-      .getClient()
-      .from('member')
+    const { data, error } = await this.supabase
       .delete()
       .eq('id', id)
-      .select();
+      .select(this.selectFields)
+      .single();
 
     if (error) {
-      if (error.code === 'PGRST116') {
-        throw new NotFoundException(`Member with ID ${id} not found`);
-      }
-      throw new InternalServerErrorException('Failed to delete member');
+      this.handleError(error, 'delete member');
     }
 
-    if (!data || data.length === 0) {
+    if (!data) {
       throw new NotFoundException(`Member with ID ${id} not found`);
     }
 
-    return transformSupabaseResultToCamelCase<Member>(data[0]);
+    return transformSupabaseResultToCamelCase<Member>(data);
   }
 
   async updateMemberStatus(
     memberId: string,
     status: Enums<'member_status'>,
   ): Promise<void> {
-    const { error } = await this.supabaseService
-      .getClient()
-      .from('member')
-      .update({ status })
-      .eq('id', memberId);
+    const { error } = await this.supabase.update({ status }).eq('id', memberId);
 
     if (error) {
-      throw new InternalServerErrorException('Failed to update member status');
+      this.handleError(error, 'update member status');
     }
+  }
+
+  async findByEmail(email: string): Promise<Member | null> {
+    const { data, error } = await this.supabase
+      .select(this.selectFields)
+      .eq('email', email)
+      .single();
+
+    if (error) {
+      this.handleError(error, 'find by email');
+    }
+    return data ? transformSupabaseResultToCamelCase<Member>(data) : null;
+  }
+
+  private handleError(error: any, operation: string): never {
+    if (error?.code === 'PGRST116') {
+      throw new NotFoundException(`Member not found for ${operation}`);
+    }
+
+    throw new InternalServerErrorException(
+      `Failed to ${operation}: ${error.message}`,
+    );
   }
 }
