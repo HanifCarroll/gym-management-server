@@ -1,15 +1,27 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateMembershipPlanDto } from './dto/create-membership-plan.dto';
 import { UpdateMembershipPlanDto } from './dto/update-membership-plan.dto';
 import { SupabaseService } from '../supabase/supabase.service';
 import { camelToSnakeCase, transformSupabaseResultToCamelCase } from '../utils';
+import {
+  DbMembershipPlan,
+  MembershipPlan,
+} from './entities/membership-plan.entity';
 
 @Injectable()
 export class MembershipPlansService {
   constructor(private readonly supabaseService: SupabaseService) {}
 
-  async create(createMembershipPlanDto: CreateMembershipPlanDto) {
-    const snakeCaseDto = camelToSnakeCase(createMembershipPlanDto);
+  async create(
+    createMembershipPlanDto: CreateMembershipPlanDto,
+  ): Promise<MembershipPlan> {
+    const snakeCaseDto = camelToSnakeCase(
+      createMembershipPlanDto,
+    ) as DbMembershipPlan;
     const { data, error } = await this.supabaseService
       .getClient()
       .from('membership_plan')
@@ -18,20 +30,22 @@ export class MembershipPlansService {
       .single();
 
     if (error) throw error;
-    return transformSupabaseResultToCamelCase(data);
+
+    return transformSupabaseResultToCamelCase<MembershipPlan>(data);
   }
 
-  async findAll() {
+  async findAll(): Promise<MembershipPlan[]> {
     const { data, error } = await this.supabaseService
       .getClient()
       .from('membership_plan')
       .select('*');
 
     if (error) throw error;
-    return transformSupabaseResultToCamelCase(data);
+
+    return transformSupabaseResultToCamelCase<MembershipPlan[]>(data);
   }
 
-  async findOne(id: string) {
+  async findOne(id: string): Promise<MembershipPlan> {
     const { data, error } = await this.supabaseService
       .getClient()
       .from('membership_plan')
@@ -40,10 +54,14 @@ export class MembershipPlansService {
       .single();
 
     if (error) throw error;
-    return transformSupabaseResultToCamelCase(data);
+
+    return transformSupabaseResultToCamelCase<MembershipPlan>(data);
   }
 
-  async update(id: string, updateMembershipPlanDto: UpdateMembershipPlanDto) {
+  async update(
+    id: string,
+    updateMembershipPlanDto: UpdateMembershipPlanDto,
+  ): Promise<MembershipPlan> {
     const snakeCaseDto = camelToSnakeCase(updateMembershipPlanDto);
     const { data, error } = await this.supabaseService
       .getClient()
@@ -54,46 +72,50 @@ export class MembershipPlansService {
       .single();
 
     if (error) throw error;
-    return transformSupabaseResultToCamelCase(data);
+
+    return transformSupabaseResultToCamelCase<MembershipPlan>(data);
   }
 
-  async remove(id: string) {
+  async remove(id: string): Promise<MembershipPlan> {
     const client = this.supabaseService.getClient();
 
-    try {
-      // First, delete associated memberships
-      const { error: membershipDeleteError } = await client
-        .from('membership')
-        .delete()
-        .eq('plan_id', id);
-      if (membershipDeleteError) throw membershipDeleteError;
+    // First, delete associated memberships
+    const { error: membershipDeleteError } = await client
+      .from('membership')
+      .delete()
+      .eq('plan_id', id);
 
-      // Then, delete the membership plan
-      const { data, error } = await client
-        .from('membership_plan')
-        .delete()
-        .eq('id', id)
-        .select()
-        .single();
+    if (membershipDeleteError) {
+      throw new InternalServerErrorException(
+        'Error deleting associated memberships',
+        membershipDeleteError.message,
+      );
+    }
 
-      if (error) {
-        if (error.code === 'PGRST116') {
-          throw new NotFoundException(
-            `Membership plan with ID "${id}" not found`,
-          );
-        }
-        throw error;
-      }
+    // Then, delete the membership plan
+    const { data, error } = await client
+      .from('membership_plan')
+      .delete()
+      .eq('id', id)
+      .select()
+      .single();
 
-      if (!data) {
+    if (error) {
+      if (error.code === 'PGRST116') {
         throw new NotFoundException(
           `Membership plan with ID "${id}" not found`,
         );
       }
-
-      return transformSupabaseResultToCamelCase(data);
-    } catch (error) {
-      throw error;
+      throw new InternalServerErrorException(
+        'Error deleting membership plan',
+        error.message,
+      );
     }
+
+    if (!data) {
+      throw new NotFoundException(`Membership plan with ID "${id}" not found`);
+    }
+
+    return transformSupabaseResultToCamelCase<MembershipPlan>(data);
   }
 }

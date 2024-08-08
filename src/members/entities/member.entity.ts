@@ -1,8 +1,4 @@
-export enum MemberStatus {
-  ACTIVE = 'Active',
-  INACTIVE = 'Inactive',
-  SUSPENDED = 'Suspended',
-}
+import { Enums } from '../../supabase/supabase';
 
 export interface DbMember {
   id: string;
@@ -10,7 +6,7 @@ export interface DbMember {
   last_name: string;
   email: string;
   phone?: string;
-  status: string;
+  status: Enums<'member_status'>;
   created_at: string;
   updated_at: string;
 }
@@ -21,7 +17,7 @@ export interface Member {
   lastName: string;
   email: string;
   phone?: string;
-  status: MemberStatus;
+  status: Enums<'member_status'>;
   createdAt: string;
   updatedAt: string;
 }

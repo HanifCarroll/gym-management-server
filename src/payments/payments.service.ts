@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { SupabaseService } from '../supabase/supabase.service';
 import { StripeService } from '../stripe/stripe.service';
 import { transformSupabaseResultToCamelCase } from '../utils';
+import { Payment } from './entities/payment.entity';
 
 @Injectable()
 export class PaymentService {
@@ -10,7 +11,14 @@ export class PaymentService {
     private stripeService: StripeService,
   ) {}
 
-  async createPayment(memberId: string, amount: number) {
+  async createPayment(
+    memberId: string,
+    amount: number,
+  ): Promise<{
+    paymentId: string;
+    clientSecret: string;
+    paymentIntentId: string;
+  }> {
     const supabase = this.supabaseService.getClient();
 
     // Check if member exists
@@ -110,7 +118,7 @@ export class PaymentService {
 
       const { error: updateMembershipError } = await supabase
         .from('membership')
-        .update({ end_date: newEndDate })
+        .update({ end_date: newEndDate.toString() })
         .eq('id', existingMembership.id);
 
       if (updateMembershipError) {
@@ -136,10 +144,9 @@ export class PaymentService {
     return transformSupabaseResultToCamelCase(payment);
   }
 
-  async getPaymentHistory(memberId: string): Promise<any[]> {
-    const supabase = this.supabaseService.getClient();
-
-    const { data, error } = await supabase
+  async getPaymentHistory(memberId: string): Promise<Payment[]> {
+    const { data, error } = await this.supabaseService
+      .getClient()
       .from('payment')
       .select('*')
       .eq('member_id', memberId)
@@ -152,10 +159,9 @@ export class PaymentService {
     return transformSupabaseResultToCamelCase(data);
   }
 
-  async getAllPayments(): Promise<any[]> {
-    const supabase = this.supabaseService.getClient();
-
-    const { data, error } = await supabase
+  async getAllPayments(): Promise<Payment[]> {
+    const { data, error } = await this.supabaseService
+      .getClient()
       .from('payment')
       .select('*')
       .order('date', { ascending: false });

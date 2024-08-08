@@ -1,16 +1,18 @@
 import {
   BadRequestException,
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
 import { SupabaseService } from '../supabase/supabase.service';
 import { transformSupabaseResultToCamelCase } from '../utils';
+import { CheckIn } from './entities/check-in.entity';
 
 @Injectable()
 export class CheckInService {
   constructor(private supabaseService: SupabaseService) {}
 
-  async createCheckIn(memberId: string): Promise<any> {
+  async createCheckIn(memberId: string): Promise<CheckIn> {
     const supabase = this.supabaseService.getClient();
 
     // Check if the member exists and is active
@@ -36,13 +38,13 @@ export class CheckInService {
       .single();
 
     if (error) {
-      throw new Error('Failed to create check-in');
+      throw new InternalServerErrorException('Failed to create check-in');
     }
 
-    return transformSupabaseResultToCamelCase(data);
+    return transformSupabaseResultToCamelCase<CheckIn>(data);
   }
 
-  async getHistoricalCheckIns(memberId?: string): Promise<any[]> {
+  async getHistoricalCheckIns(memberId?: string): Promise<CheckIn[]> {
     const supabase = this.supabaseService.getClient();
     let query = supabase
       .from('check_in')
@@ -67,9 +69,11 @@ export class CheckInService {
     const { data, error } = await query;
 
     if (error) {
-      throw new Error('Failed to retrieve historical check-ins');
+      throw new InternalServerErrorException(
+        'Failed to retrieve historical check-ins',
+      );
     }
 
-    return transformSupabaseResultToCamelCase(data);
+    return transformSupabaseResultToCamelCase<CheckIn[]>(data);
   }
 }
