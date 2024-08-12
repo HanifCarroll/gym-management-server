@@ -62,10 +62,6 @@ export class MembershipPlanRepository {
       this.handleError(error, 'retrieve membership plan');
     }
 
-    if (!data) {
-      throw new NotFoundException(`Membership plan with ID ${id} not found`);
-    }
-
     return transformSupabaseResultToCamelCase<MembershipPlan>(data);
   }
 
@@ -125,15 +121,14 @@ export class MembershipPlanRepository {
   async findByName(name: string): Promise<MembershipPlan | null> {
     const { data, error } = await this.db
       .select(this.selectFields)
-      .eq('name', name)
-      .single();
+      .eq('name', name);
 
     if (error) {
       this.handleError(error, 'find membership plan by name');
     }
 
-    return data
-      ? transformSupabaseResultToCamelCase<MembershipPlan>(data)
+    return data && data.length > 0
+      ? transformSupabaseResultToCamelCase<MembershipPlan>(data[0])
       : null;
   }
 

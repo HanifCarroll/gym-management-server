@@ -114,14 +114,11 @@ export class MemberRepository {
   }
 
   async findByEmail(email: string): Promise<Member | null> {
-    const { data, error } = await this.supabase
+    const { data } = await this.supabase
       .select(this.selectFields)
       .eq('email', email)
       .single();
 
-    if (error) {
-      this.handleError(error, 'find by email');
-    }
     return data ? transformSupabaseResultToCamelCase<Member>(data) : null;
   }
 

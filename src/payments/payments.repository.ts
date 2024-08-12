@@ -121,7 +121,7 @@ export class PaymentRepository {
       .from('membership')
       .insert({
         member_id: memberId,
-        plan_id: '21c21c00-0f9b-4e73-8442-91debc572959',
+        plan_id: '56037890-81a1-4f51-9a0c-c342a3e72103',
         start_date: startDate,
         end_date: endDate,
         status: 'Active',

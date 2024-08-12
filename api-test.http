@@ -30,6 +30,8 @@ GET {{baseUrl}}/check-in/history
 
 ### Membership Plan Operations
 
+@membershipPlanId = 56037890-81a1-4f51-9a0c-c342a3e72103
+
 ### Create a new membership plan
 # Expected: 201 Created
 POST {{baseUrl}}/membership-plans
@@ -40,6 +42,7 @@ Content-Type: application/json
   "duration": 1,
   "price": 49.99
 }
+
 
 ### Get all membership plans
 # Expected: 200 OK
@@ -76,6 +79,7 @@ Content-Type: application/json
 }
 
 ### Confirm a payment
+@paymentIntentId = test
 # Expected: 200 OK
 POST {{baseUrl}}/payments/confirm/{{paymentIntentId}}
 Content-Type: application/json
