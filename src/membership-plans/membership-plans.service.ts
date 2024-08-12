@@ -16,7 +16,6 @@ export class MembershipPlansService {
     const existingPlan = await this.membershipPlanRepository.findByName(
       createMembershipPlanDto.name,
     );
-    console.log('ex', existingPlan);
     if (existingPlan) {
       throw new BadRequestException(
         `Membership plan with name "${createMembershipPlanDto.name}" already exists`,

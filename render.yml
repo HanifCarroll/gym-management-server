@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: gym-management-server
+    env: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    plan: starter
+    envVars:
+      - key: NODE_ENV
+        value: production
+    # Add any other environment variables your app needs
