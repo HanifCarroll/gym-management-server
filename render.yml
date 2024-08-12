@@ -8,4 +8,9 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
-    # Add any other environment variables your app needs
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_KEY
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
