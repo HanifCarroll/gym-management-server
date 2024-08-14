@@ -11,8 +11,8 @@ import { CheckInService } from './check-in.service';
 import { CheckIn } from './entities/check-in.entity';
 import { ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 
-@ApiTags('check-in')
-@Controller('check-in')
+@ApiTags('check-ins')
+@Controller('check-ins')
 export class CheckInController {
   constructor(private checkInService: CheckInService) {}
 
@@ -28,7 +28,7 @@ export class CheckInController {
     return this.checkInService.createCheckIn(memberId);
   }
 
-  @Get('history')
+  @Get()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Get historical check-ins' })
   @ApiResponse({
