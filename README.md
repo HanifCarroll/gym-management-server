@@ -1,73 +1,215 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="200" alt="Nest Logo" /></a>
-</p>
+# Gym Management Application Backend
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+A scalable and robust backend for efficient gym management. This backend project provides the core API and services for
+managing members, memberships, payments, and check-ins, integrating seamlessly with
+the [frontend application](https://github.com/HanifCarroll/gym-management-client).
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Table of Contents
 
-## Description
+1. [Features](#features)
+2. [Technologies Used](#technologies-used)
+3. [Architecture Overview](#architecture-overview)
+4. [Getting Started](#getting-started)
+5. [Running the Application](#running-the-application)
+6. [Testing](#testing)
+7. [Database Schema](#database-schema)
+8. [API Endpoints](#api-endpoints)
+9. [Code Quality and Formatting](#code-quality-and-formatting)
+10. [License](#license)
+11. [Contact Information](#contact-information)
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## Features
 
-## Installation
+- Member management with CRUD operations
+- Membership plan creation and management
+- Payment processing with Stripe integration
+- Member check-in system
+- Well-documented RESTful API
 
-```bash
-$ npm install
+## Technologies Used
+
+- Node.js: JavaScript runtime for building the server-side application
+- Nest.js: A progressive Node.js framework for building efficient, scalable applications
+- TypeScript: Strongly typed programming language that builds on JavaScript
+- Supabase: Hosted Postgres database for data storage
+- Stripe: Payment processing integration for handling transactions
+- Jest: Testing framework for unit and integration tests
+- ESLint: Linting tool to ensure code quality
+- Prettier: Code formatter for consistent styling
+- Docker: Containerization for consistent environment setup
+
+## Architecture Overview
+
+This project is structured following the principles of modularity and separation of concerns. The backend is organized
+into several key modules:
+
+Core Modules:
+
+- Members Module: Handles all operations related to gym members
+- Membership Plans Module: Manages membership plans
+- Payments Module: Integrates with Stripe to manage payments
+- Check-In Module: Records and manages member check-ins
+
+Services and Repositories:
+
+- Service Layer: Contains business logic for each module
+- Repository Layer: Handles data access and manipulation
+
+Utility Layer:
+
+- Supabase Service: Provides a wrapper around Supabase
+- Stripe Service: Encapsulates Stripe API calls
+
+This architecture promotes:
+
+- Scalability: The modular structure allows for easy expansion and maintenance
+- Testability: Separation of concerns ensures that each module can be tested independently
+- Maintainability: Clear organization of code enhances readability and makes it easier to update or refactor
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js (v20 or later)
+- npm (v10 or later)
+
+### Installation
+
+1. Clone the repository:
+
+   ```
+   git clone https://github.com/HanifCarroll/gym-management-server.git
+   ```
+
+2. Navigate to the project directory:
+
+   ```
+   cd gym-management-server
+   ```
+
+3. Install dependencies:
+   ```
+   npm install
+   ```
+
+### Environment Setup
+
+1. Copy the `.env.example` file to `.env`:
+
+   ```
+   cp .env.example .env
+   ```
+
+2. Edit `.env` and set the required environment variables:
+   ```
+   SUPABASE_URL=your_supabase_url
+   SUPABASE_KEY=your_supabase_key
+   STRIPE_SECRET_KEY=your_stripe_secret_key
+   ```
+
+Your stripe secret key can be retrieved from your Stripe dashboard.
+
+Please make sure that test mode is enabled and that you grab the corresponding key. It should start with pk*test*.
+
+## Running the Application
+
+To run the application in development mode:
+
+```
+npm run start:dev
 ```
 
-## Running the app
+The server will start on `http://localhost:3001`, and the API will be accessible at this URL.
 
-```bash
-# development
-$ npm run start
+## Testing
 
-# watch mode
-$ npm run start:dev
+This project uses Jest for unit and integration testing. Tests cover the core business logic, service layers, and API
+endpoints to ensure reliability and correctness.
 
-# production mode
-$ npm run start:prod
+To run tests:
+
+```
+npm test
 ```
 
-## Test
+For watch mode:
 
-```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+```
+npm run test:watch
 ```
 
-## Support
+Test coverage reports are generated automatically and can be reviewed to ensure that the application is well-tested.
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+## Database Schema
 
-## Stay in touch
+The database schema is implemented in Supabase and follows a relational model. Key entities include:
 
-- Author - [Kamil Myśliwiec](https://kamilmysliwiec.com)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+- Members: Stores member information such as name, contact details, and status
+- MembershipPlans: Defines the available membership plans, including duration and pricing
+- Memberships: Links members to their membership plans, with start and end dates
+- Payments: Tracks payment transactions, including amounts and statuses
+- CheckIns: Records member check-ins, linked to a member
+
+## API Endpoints
+
+The backend exposes a RESTful API for interacting with the system. Key endpoints include:
+
+- Members:
+  - GET /api/members
+  - POST /api/members
+  - PUT /api/members/:id
+  - DELETE /api/members/:id
+- Membership Plans:
+  - GET /api/membership-plans
+  - POST /api/membership-plans
+  - PATCH /api/membership-plans/:id
+  - DELETE /api/membership-plans/:id
+- Payments:
+  - POST /api/payments/initiate
+  - POST /api/payments/confirm/:paymentIntentId
+  - GET /api/payments/history
+- Check-Ins:
+  - POST /api/check-in
+  - GET /api/check-in/history
+
+These endpoints are documented using Swagger, which is automatically generated and can be accessed
+at `http://localhost:3001/api`.
+
+## Code Quality and Formatting
+
+To ensure code quality and consistency, this project uses:
+
+- **Prettier**: For consistent code formatting
+
+  - Configuration in `.prettierrc`
+  - Run formatter: `npm run format`
+
+- **ESLint**: For static code analysis
+
+  - Configuration in `.eslintrc.js`
+  - Run linter: `npm run lint`
+
+- **lint-staged**: For running linters on git staged files
+
+  - Configuration in `package.json`
+
+- **Husky**: For running git hooks
+  - Pre-commit hook to run lint-staged
+
+These tools ensure that the codebase remains clean, readable, and maintainable.
 
 ## License
 
-Nest is [MIT licensed](LICENSE).
+This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details.
+
+## Contact Information
+
+For any inquiries about this project, please contact:
+
+Hanif Carroll
+
+Email: [HanifCarroll@gmail.com](mailto:HanifCarroll@gmail.com)
+
+LinkedIn: https://www.linkedin.com/in/hanifcarroll
+
+GitHub: https://github.com/HanifCarroll
