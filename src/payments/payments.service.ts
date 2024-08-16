@@ -4,17 +4,31 @@ import { Payment } from './entities/payment.entity';
 import { CreatePaymentResponse } from './entities/create-payment-response';
 import { PaymentRepository } from './payments.repository';
 import { MemberRepository } from '../members/member.repository';
+import { MembershipPlanRepository } from '../membership-plans/membership-plans.repository';
+import { addMonths, isAfter } from 'date-fns';
 
 @Injectable()
 export class PaymentService {
+  private readonly memberRepository: MemberRepository;
+  private readonly paymentRepository: PaymentRepository;
+  private readonly membershipPlanRepository: MembershipPlanRepository;
+  private readonly stripeService: StripeService;
+
   constructor(
-    private readonly memberRepository: MemberRepository,
-    private readonly paymentRepository: PaymentRepository,
-    private readonly stripeService: StripeService,
-  ) {}
+    memberRepository: MemberRepository,
+    paymentRepository: PaymentRepository,
+    membershipPlanRepository: MembershipPlanRepository,
+    stripeService: StripeService,
+  ) {
+    this.memberRepository = memberRepository;
+    this.paymentRepository = paymentRepository;
+    this.membershipPlanRepository = membershipPlanRepository;
+    this.stripeService = stripeService;
+  }
 
   async createPayment(
     memberId: string,
+    planId: string,
     amount: number,
   ): Promise<CreatePaymentResponse> {
     // Check to see if member exists
@@ -29,11 +43,12 @@ export class PaymentService {
       'usd',
     );
 
-    const paymentResponse = await this.paymentRepository.createPaymentRecord(
+    const paymentResponse = await this.paymentRepository.createPaymentRecord({
       memberId,
+      planId,
       amount,
-      paymentIntent.id,
-    );
+      stripePaymentIntentId: paymentIntent.id,
+    });
 
     return {
       ...paymentResponse,
@@ -44,11 +59,9 @@ export class PaymentService {
   async confirmPayment(paymentIntentId: string): Promise<Payment> {
     const payment =
       await this.paymentRepository.findPaymentByIntentId(paymentIntentId);
-
+    console.log('payment', payment);
     await this.paymentRepository.updatePaymentStatus(payment.id, 'Successful');
-    await this.memberRepository.updateMemberStatus(payment.memberId, 'Active');
-
-    await this.updateMembership(payment.memberId);
+    await this.updateMembership(payment.memberId, payment.planId);
 
     return payment;
   }
@@ -62,25 +75,41 @@ export class PaymentService {
     return this.paymentRepository.getPaymentHistory(memberId);
   }
 
-  private async updateMembership(memberId: string): Promise<void> {
+  private async updateMembership(
+    memberId: string,
+    membershipPlanId: string,
+  ): Promise<void> {
+    console.log('vars', memberId, membershipPlanId);
+    const membershipPlan =
+      await this.membershipPlanRepository.findOne(membershipPlanId);
     const existingMembership =
       await this.paymentRepository.findExistingMembership(memberId);
     const now = new Date();
-    const thirtyDaysLater = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+    const membershipPlanDuration = membershipPlan.duration; // In months
 
     if (existingMembership) {
-      const newEndDate = new Date(existingMembership.end_date);
-      newEndDate.setDate(newEndDate.getDate() + 30);
+      const membershipEndDate = new Date(existingMembership.end_date);
+      // If membership has already expired, extend from now
+      const extensionStartDate = isAfter(membershipEndDate, now)
+        ? membershipEndDate
+        : now;
+      const newEndDate = addMonths(extensionStartDate, membershipPlanDuration);
       await this.paymentRepository.extendMembership(
         existingMembership.id,
         newEndDate.toISOString(),
       );
     } else {
-      await this.paymentRepository.createNewMembership(
+      const member = await this.memberRepository.findById(memberId);
+      if (member.status === 'Inactive') {
+        await this.memberRepository.updateMemberStatus(memberId, 'Active');
+      }
+      const endDate = addMonths(now, membershipPlanDuration);
+      await this.paymentRepository.createNewMembership({
         memberId,
-        now.toISOString(),
-        thirtyDaysLater.toISOString(),
-      );
+        planId: membershipPlanId,
+        startDate: now.toISOString(),
+        endDate: endDate.toISOString(),
+      });
     }
   }
 }

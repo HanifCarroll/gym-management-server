@@ -5,6 +5,7 @@ import { StripeService } from '../stripe/stripe.service';
 import { MemberRepository } from '../members/member.repository';
 import { PaymentRepository } from './payments.repository';
 import { SupabaseService } from '../supabase/supabase.service';
+import { MembershipPlanRepository } from '../membership-plans/membership-plans.repository';
 
 @Module({
   controllers: [PaymentController],
@@ -12,6 +13,7 @@ import { SupabaseService } from '../supabase/supabase.service';
     PaymentService,
     PaymentRepository,
     MemberRepository,
+    MembershipPlanRepository,
     SupabaseService,
     StripeService,
   ],

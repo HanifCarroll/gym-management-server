@@ -28,6 +28,11 @@ export class Payment {
   @IsNotEmpty()
   memberId: string; // Foreign key to Member
 
+  @ApiProperty({ description: 'The plan ID associated with the payment' })
+  @IsString()
+  @IsNotEmpty()
+  planId: string; // Foreign key to MembershipPlan
+
   @ApiProperty({ description: 'The amount of the payment' })
   @IsNumber()
   amount: number; // Decimal

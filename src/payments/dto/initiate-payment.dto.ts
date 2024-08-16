@@ -10,4 +10,8 @@ export class InitiatePaymentDto {
   @IsNumber()
   @IsPositive()
   amount: number;
+
+  @ApiProperty({ description: 'The ID of the plan the member is paying for' })
+  @IsString()
+  planId: string;
 }

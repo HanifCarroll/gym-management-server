@@ -50,6 +50,7 @@ export class PaymentController {
     }
     return this.paymentService.createPayment(
       initiatePaymentDto.memberId,
+      initiatePaymentDto.planId,
       initiatePaymentDto.amount,
     );
   }

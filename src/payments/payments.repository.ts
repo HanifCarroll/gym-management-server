@@ -13,7 +13,7 @@ import { Enums } from '../supabase/supabase';
 export class PaymentRepository {
   private readonly tableName = 'payment';
   private readonly selectFields =
-    'id, member_id, amount, date, status, stripe_payment_intent_id, created_at, updated_at';
+    'id, member_id, amount, date, plan_id, status, stripe_payment_intent_id, created_at, updated_at';
 
   constructor(private supabaseService: SupabaseService) {}
 
@@ -21,17 +21,24 @@ export class PaymentRepository {
     return this.supabaseService.getClient().from(this.tableName);
   }
 
-  async createPaymentRecord(
-    memberId: string,
-    amount: number,
-    stripePaymentIntentId: string,
-  ): Promise<CreatePaymentResponse> {
+  async createPaymentRecord({
+    memberId,
+    planId,
+    amount,
+    stripePaymentIntentId,
+  }: {
+    memberId: string;
+    planId: string;
+    amount: number;
+    stripePaymentIntentId: string;
+  }): Promise<CreatePaymentResponse> {
     const { data, error } = await this.db
       .insert({
         member_id: memberId,
         amount,
         status: 'Pending',
         stripe_payment_intent_id: stripePaymentIntentId,
+        plan_id: planId,
       })
       .select(this.selectFields)
       .single();
@@ -111,17 +118,23 @@ export class PaymentRepository {
     }
   }
 
-  async createNewMembership(
-    memberId: string,
-    startDate: string,
-    endDate: string,
-  ): Promise<void> {
+  async createNewMembership({
+    memberId,
+    planId,
+    startDate,
+    endDate,
+  }: {
+    memberId: string;
+    planId: string;
+    startDate: string;
+    endDate: string;
+  }): Promise<void> {
     const { error } = await this.supabaseService
       .getClient()
       .from('membership')
       .insert({
         member_id: memberId,
-        plan_id: '56037890-81a1-4f51-9a0c-c342a3e72103',
+        plan_id: planId,
         start_date: startDate,
         end_date: endDate,
         status: 'Active',
