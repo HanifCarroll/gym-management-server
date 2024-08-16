@@ -74,7 +74,7 @@ export class PaymentController {
     return this.paymentService.confirmPayment(paymentIntentId);
   }
 
-  @Get('history')
+  @Get()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Get payment history' })
   @ApiResponse({

@@ -52,23 +52,6 @@ export class MembershipPlansController {
     return this.membershipPlansService.findAll();
   }
 
-  @Get(':id')
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Get a membership plan by ID' })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'Successfully retrieved the membership plan',
-    type: MembershipPlan,
-  })
-  @ApiResponse({
-    status: HttpStatus.NOT_FOUND,
-    description: 'Membership plan not found',
-  })
-  @ApiParam({ name: 'id', type: 'string' })
-  findOne(@Param('id') id: string): Promise<MembershipPlan> {
-    return this.membershipPlansService.findOne(id);
-  }
-
   @Patch(':id')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Update a membership plan by ID' })
